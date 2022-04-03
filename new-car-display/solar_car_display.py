@@ -62,13 +62,25 @@ class CarDisplay(Tk):
         self._frame.pack(side=BOTTOM, expand=True, fill=BOTH)
         
 
-
-
 class HomeFrame(Frame):
     def __init__(self, parent):
         Frame.__init__(self, parent)
         parent.configure(background=BCK_COLOR)
+        #all stringvars
+        self.speed = StringVar()
+        self.cruise_on = StringVar()
+        self.can_on = StringVar()
+        self.current = StringVar()
+        self.voltage = StringVar()
+        self.lowestV = StringVar()
+
+        self.create_frames()
+        self.updater()
+
+
+    def create_frames(self):
         #frame that shows the velocity and buttons
+        self.i = 0
         self.mainframe = Frame(self, bg=BCK_COLOR)
         
         #frame with all the deets
@@ -80,7 +92,7 @@ class HomeFrame(Frame):
         gps_font = ("Helvetica", 20, "bold")
         
         #velocity label
-        self.speed = StringVar()
+        #self.speed = StringVar()
         self.speed.set("28.6")
         speed_label = ttk.Label(self.mainframe, textvariable=self.speed,
             font=vel_font, background=BCK_COLOR, foreground=FG_COLOR)
@@ -100,35 +112,35 @@ class HomeFrame(Frame):
         #info labels
         cruise_label = ttk.Label(self.info_frame, text="Cruise Contol", font=info_font)
         cruise_label.grid(column=0, row=0, sticky=W)
-        self.cruise_on = StringVar()
+        #self.cruise_on = StringVar()
         self.cruise_on.set("Off")
         cruise_status = ttk.Label(self.info_frame, textvariable=self.cruise_on, font=info_font)
         cruise_status.grid(column=1, row=0, sticky=E)
         
         can_label = ttk.Label(self.info_frame, text="CAN Status", font=info_font)
         can_label.grid(column=0, row=1, sticky=W)
-        self.can_on = StringVar()
+        #self.can_on = StringVar()
         self.can_on.set("Connected")
         can_status = ttk.Label(self.info_frame, textvariable=self.can_on, font=info_font)
         can_status.grid(column=1, row=1, sticky=E)
         
         current_label = ttk.Label(self.info_frame, text="Main Current (A)", font=info_font)
         current_label.grid(column=0, row=2, sticky=W)
-        self.current = StringVar()
+        #self.current = StringVar()
         self.current.set(11.89)
         can_status = ttk.Label(self.info_frame, textvariable=self.current, font=info_font)
         can_status.grid(column=1, row=2, sticky=E)
         
         voltage_label = ttk.Label(self.info_frame, text="Main Voltage (V)", font=info_font)
         voltage_label.grid(column=0, row=3, sticky=W)
-        self.voltage = StringVar()
+        #self.voltage = StringVar()
         self.voltage.set(14.29)
         voltage_status = ttk.Label(self.info_frame, textvariable=self.voltage, font=info_font)
         voltage_status.grid(column=1, row=3, sticky=E)
         
         lowestV_label = ttk.Label(self.info_frame, text="Lowest Voltage (V)", font=info_font)
         lowestV_label.grid(column=0, row=4, sticky=W)
-        self.lowestV = StringVar()
+        #self.lowestV = StringVar()
         self.lowestV.set(1.8)
         lowestV_status = ttk.Label(self.info_frame, textvariable=self.lowestV, font=info_font)
         lowestV_status.grid(column=1, row=4, sticky=E)
@@ -156,6 +168,12 @@ class HomeFrame(Frame):
         #padx = (left, right)
         self.mainframe.pack(expand=True, fill=BOTH, side=LEFT)
         self.info_frame.pack(expand=False, fill=BOTH, side=RIGHT, padx=(0, 10))
+        
+        
+    def updater(self):
+        #self.speed.set()
+        self.after(1000, self.updater)
+
 
 
 
