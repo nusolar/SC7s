@@ -18,7 +18,7 @@ FG_COLOR = "#ebebeb" #silver
 # CAN names to their values, global because it is accessed by multiple
 # threads. Initialized with the names for the values we choose to display.
 # For now these are dummy values.
-displayables = {"VVEL": None, "15VS": None}
+displayables = {"VVEL": 0.0, "15VS": 0.0, "EFLA": 0}
 
 class CarDisplay(Tk):
     def __init__(self, *args, **kwargs):
@@ -76,7 +76,7 @@ class HomeFrame(Frame):
         parent.configure(background=BCK_COLOR)
         #all stringvars
         self.speed = StringVar()
-        self.cruise_on = StringVar()
+        self.errors = StringVar()
         self.can_on = StringVar()
         self.current = StringVar()
         self.voltage = StringVar()
@@ -118,12 +118,12 @@ class HomeFrame(Frame):
 
 
         #info labels
-        cruise_label = ttk.Label(self.info_frame, text="Cruise Contol", font=info_font)
-        cruise_label.grid(column=0, row=0, sticky=W)
-        #self.cruise_on = StringVar()
-        self.cruise_on.set("Off")
-        cruise_status = ttk.Label(self.info_frame, textvariable=self.cruise_on, font=info_font)
-        cruise_status.grid(column=1, row=0, sticky=E)
+        error_label = ttk.Label(self.info_frame, text="Error Status", font=info_font)
+        error_label.grid(column=0, row=0, sticky=W)
+        #self.errors = StringVar()
+        self.errors.set("No active errors")
+        error_status = ttk.Label(self.info_frame, textvariable=self.errors, font=info_font)
+        error_status.grid(column=1, row=0, sticky=E)
 
         can_label = ttk.Label(self.info_frame, text="CAN Status", font=info_font)
         can_label.grid(column=0, row=1, sticky=W)
@@ -179,15 +179,19 @@ class HomeFrame(Frame):
 
 
     def updater(self):
-        self.speed.set(displayables['VVEL'])
-        self.voltage.set(displayables['15VS'])
+        self.speed.set(round(displayables['VVEL'], 3))
+        self.voltage.set(round(displayables['15VS'], 3))
+        if displayables['EFLA'] != 0:
+            self.errors.set('Active errors!')
+        else:
+            self.errors.set('No active errors')
         self.after(1000, self.updater)
 
 
 # Worker function to receive packets off CAN line and
 # update displayables
 def receiver_worker():
-    r = Receiver()
+    r = Receiver(serial_port='/dev/ttyUSB0')
     for item in r.get_packets():
         if item['Tag'] in displayables:
             displayables[item['Tag']] = item['data']
