@@ -4,7 +4,7 @@ export default class gps extends Component {
     render() {
         return (
             <div>
-                this is GPS
+                this is the story
             </div>
         )
     }

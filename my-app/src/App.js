@@ -43,7 +43,7 @@ function curr_display(component_name) {
 //   xbeeAPI.builder.pipe(serialport);
   
   // serialport.on("open", function() {
-  //   var frame_obj = { // AT Request to be sent
+  //   var frame_obj = {  AT Request to be sent
   //     type: C.FRAME_TYPE.AT_COMMAND,
   //     command: "NI",
   //     commandParameter: [],
@@ -85,7 +85,7 @@ class App extends React.Component{
     <div className="App">
       <div className="container">
 
-        <Header />
+        {/* <Header /> */}
 
         <br/>
         <br/>

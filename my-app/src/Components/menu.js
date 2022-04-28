@@ -12,17 +12,17 @@ export default class menu extends Component {
             <div class="col">
               <div class="card_holder" onClick={() => handleToUpdate("Summary")}>
                 <div class="card-body">
-                  <h5 class="card-title text-white">Summary</h5>
+                  <h5 class="card-title text-white">Questions</h5>
                 </div>
               </div>
               
               <div class="card"  onClick={() => handleToUpdate("Gps")}>
                 <div class="card-body">
-                  <h5 class="card-title text_white">GPS</h5>
+                  <h5 class="card-title text_white">Results</h5>
                 </div>
               </div>
               
-              <div class="card "  onClick={() => handleToUpdate("Batteries")}>
+              {/* <div class="card "  onClick={() => handleToUpdate("Batteries")}>
                 <div class="card-body">
                   <h5 class="card-title">Batteries</h5>
                 </div>
@@ -38,7 +38,7 @@ export default class menu extends Component {
                 <div class="card-body">
                   <p class="card-title">Time:  </p>
                 </div>
-              </div> 
+              </div>  */}
             </div>
 
 
