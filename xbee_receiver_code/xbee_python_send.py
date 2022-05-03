@@ -1,6 +1,4 @@
 from ast import excepthandler
-from curses import baudrate
-from tokenize import String
 from digi.xbee.devices import XBeeDevice
 import time
 
