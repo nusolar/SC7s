@@ -1,0 +1,27 @@
+Field_Name,Tag,CAN_ID,Offset,Length,Type,Description
+Limit Flags,LFLA,401,0,2,H,Flags indicate which control loop is limiting the output current of the motor controller:
+Error Flags,EFLA,401,2,2,H,Flags indicate errors:
+Active Motor,AMOT,401,4,2,H,The index of the active motor currently being used.
+Transmit Error Count,TERR,401,6,1,B,The DSP CAN transmission error counter
+Receive Error Count,RERR,401,7,1,B,The DSP CAN receive error counter
+Bus Current,BCUR,402,4,4,f,Current drawn from the DC bus by the controller.
+Bus Voltage,BVOL,402,0,4,f,DC bus voltage at the controller.
+Vehicle Velocity,VVEL,403,1,4,f,Vehicle velocity in metres / second.
+Motor Velocity,MVEL,403,0,4,f,Motor angular frequency in revolutions per minute.
+Phase B Current,PHSB,404,0,4,f,RMS current in motor Phase B.
+Phase C Current,PHSC,404,4,4,f,RMS current in motor Phase C.
+Vq,VIMG,405,0,4,f,Imaginary component of the applied non-rotating voltage vector to the motor.
+Vd,VREL,405,4,4,f,Real component of the applied non-rotating voltage vector to the motor.
+Iq,CIMG,406,0,4,f,Imaginary component of the applied non-rotating current vector to the motor. This current produces torque in the motor and should be in phase with the back-EMF of the motor.
+Id,CREL,406,4,4,f,Real component of the applied non-rotating current vector to the motor. This vector represents the field current of the motor.
+BEMFq,BEMQ,407,0,4,f,The peak of the phase to neutral motor voltage.
+BEMFd,BEMD,407,4,4,f,By definition this value is always 0V.
+15V Supply,15VS,408,4,4,f,Actual voltage level of the 15V power rail.
+1.9V Supply,19VS,409,0,4,f,Actual voltage level of the 1.9V DSP power rail.
+3.3V Supply,33VS,409,4,4,f,Actual voltage level of the 3.3V power rail.
+Motor Temp,MTMP,40B,0,4,f,Internal temperature of the motor.
+Heat-sink Temp,HTMP,40B,4,4,f,Internal temperature of Heat-sink.(case)
+BSP Board Temp,BSPT,40C,0,4,f,Temperature of the DSP board.
+Odometer,ODMT,40E,0,4,f,Distance the vehicle has travelled since reset.
+DC Bus AmpHours,DCBA,40E,4,4,f,Charge flow into the controller DC bus from the time of reset.
+Slip Speed,SSPE,417,4,4,f,Slip speed when driving an induction motor.
