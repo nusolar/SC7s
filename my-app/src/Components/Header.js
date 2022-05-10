@@ -1,4 +1,5 @@
 import React, { Component } from 'react'
+import DataCard from './DataCard'
 
 export default class Header extends Component {
     render() {
@@ -6,58 +7,22 @@ export default class Header extends Component {
             <div class="container">
                 <div class="row">
                     <div class="col">
-                        <div class="card ">
-                            <div class="card-body">
-                                <h5 class="card-title">Main Current</h5>
-                                <h1 class="card-text">22.22 </h1>
-
-                            </div>
-                        </div>
+                        <DataCard name="Main Current" value="22.22" />
                     </div>
                     <div class="col">
-                        <div class="card ">
-                            <div class="card-body">
-                                <h5 class="card-title">MPPT1</h5>
-                                <h1 class="card-text">88.88 </h1>
-
-                            </div>
-                        </div>
+                        <DataCard name="MPPT1" value="88.88" />
                     </div>
                     <div class="col">
-                        <div class="card ">
-                            <div class="card-body">
-                                <h5 class="card-title">MPPT2</h5>
-                                <h1 class="card-text">99.99 </h1>
-
-                            </div>
-                        </div>
+                        <DataCard name="MPPT2" value="99.99" />
                     </div>
                     <div class="col">
-                        <div class="card ">
-                            <div class="card-body">
-                                <h5 class="card-title">RPM</h5>
-                                <h1 class="card-text">33.33</h1>
-
-                            </div>
-                        </div>
+                        <DataCard name="RPM" value="33.33" />
                     </div>
                     <div class="col">
-                        <div class="card ">
-                            <div class="card-body">
-                                <h6 class="card-title">Lowest Voltage</h6>
-                                <h1 class="card-text">66.66</h1>
-
-                            </div>
-                        </div>
+                        <DataCard name="Lowest Voltage" value="66.66" />
                     </div>
                     <div class="col">
-                        <div class="card ">
-                            <div class="card-body">
-                                <h5 class="card-title">Highest Temp</h5>
-                                <h1 class="card-text">77.66</h1>
-
-                            </div>
-                        </div>
+                        <DataCard name="Highest Temp" value="77.66" />
                     </div>
                 </div>
             </div>
