@@ -36,7 +36,7 @@ class Receiver:
                     packet = can_parser.parse(raw)
                     for item in packet:
                         yield item
-        else:
+        elif self.interface == 'pican':
             with can.interface.Bus(channel='can0', bustype='socketcan') as bus:
                 for msg in bus:
                     # RegEx magic
@@ -47,6 +47,8 @@ class Receiver:
                     packet = can_parser.parse(tag + data)
                     for item in packet:
                         yield item
+        else:
+            raise Exception('Invalid interace')
 
 
     def get_packets_from_file(self, input_file_name: str) -> iter:
