@@ -1,8 +1,10 @@
+import json
 from receiver import Receiver
 import threading
 import time
 import csv
 from datetime import datetime
+from digi.xbee.devices import XBeeDevice
 
 class CAN_value:
     """
@@ -47,6 +49,12 @@ class Row:
     def stamp(self):
         self.timestamp = datetime.timestamp(datetime.now())
 
+    def make_dict(self):
+        row_dict = {"Timestamp": self.timestamp}
+        for tag in sendables:
+            row_dict[tag] = self.lst[tags_to_indices[tag]]
+        return row_dict
+
 # Set of CAN values to be sent to the base-station
 sendables = {'15VS', '33VS', '19VS'}
 
@@ -58,7 +66,6 @@ tags_to_indices = {}
 # which sends sends this list over the xbee radio. This will later
 # become a row that is inserted into an SQL database, so it is called `row`.
 row = Row()
-
 
 
 def construct_tags_to_indices(table_file: str):
@@ -104,6 +111,27 @@ def accumulator_worker(lock: threading.Lock):
             with lock:
                 row.lst[tags_to_indices[packet['Tag']]].pass_value(packet['data'])
 
+def setup_xbee():
+    #Xbee RF Modem info
+    serial_port_xbee = "COM5" #rPi uses /dev/ttyUSB#
+    baud_rate_xbee = 57600 # or 9600 for the other one
+    REMOTE_NODE_ID = "Router"
+
+    device = XBeeDevice(serial_port_xbee, baud_rate_xbee)
+
+    device.open()
+
+    xbee_network = device.get_network()
+
+    remote = xbee_network.discover_device(REMOTE_NODE_ID)
+
+    #check if it found the other modem
+    if remote is None:
+        print("Coudn't do it.")
+        exit(1)
+
+    return device, remote
+
 
 if __name__ == "__main__":
     construct_tags_to_indices('can_table.csv')
@@ -116,8 +144,17 @@ if __name__ == "__main__":
     acc = threading.Thread(target=accumulator_worker, args=(lock,), daemon=True)
     acc.start()
 
-    # TODO: change from printing to sending over xbee
-    while True:
+    device, remote = setup_xbee()
+
+    while(True):
         time.sleep(2)
         with lock:
-            print(row)
+            print("Sending data to %s >> %s..." % (remote.get_64bit_addr(), row))
+            json_row = json.dumps(row.make_dict())
+            device.send_data(remote, json_row)
+
+    # TODO: change from printing to sending over xbee
+    # while True:
+    #     time.sleep(2)
+    #     with lock:
+    #         print(row)
