@@ -39,6 +39,7 @@ class Receiver:
         elif self.interface == 'pican':
             with can.interface.Bus(channel='can0', bustype='socketcan') as bus:
                 for msg in bus:
+                    msg = str(msg)
                     # RegEx magic
                     tag = re.findall('(?<=ID: 0)[0-9]+', msg)[0]
                     data = re.findall('(?<= )([0-9a-f]{2})(?= )', msg)
@@ -48,7 +49,7 @@ class Receiver:
                     for item in packet:
                         yield item
         else:
-            raise Exception('Invalid interace')
+            raise Exception('Invalid interface')
 
 
     def get_packets_from_file(self, input_file_name: str) -> iter:

@@ -7,12 +7,12 @@ g = ["KEY", "Timestamp" , "15VS", "19VS", "33VS"]
 
 #add queries separately so it's easier to change later on
 CREATE_CAN_TABLE = """CREATE TABLE IF NOT EXISTS can_test_db 
-(id INTEGER PRIMARY KEY, Timestamp TEXT, 15VS REAL, 19VS REAL, 33VS REAL);"""
+(id INTEGER PRIMARY KEY, Timestamp TEXT, VS15 REAL, VS19 REAL, VS33 REAL);"""
 
-INSERT_ROW = "INSERT INTO contacts (Timestamp, 15VS, 19VS, 33VS) VALUES (?, ?, ?, ?);" #include inputs for ? when used
+INSERT_ROW = "INSERT INTO contacts (Timestamp, VS15, VS19, VS33) VALUES (?, ?, ?, ?);" #include inputs for ? when used
 
 GET_ALL_DATA = "SELECT * FROM can_test_db;"
-GET_ALL_DATA_REV = "SELECT * FROM cant_test_db ORDER BY id DESC;"
+GET_ALL_DATA_REV = "SELECT * FROM can_test_db ORDER BY id DESC;"
 SORT_BY = "SELECT * FROM can_test_db ORDER BY {field};"
 SORT_BY_REV = "SELECT * FROM can_test_db ORDER BY {field} DESC;"
 
