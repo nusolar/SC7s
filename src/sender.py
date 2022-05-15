@@ -6,12 +6,21 @@ from datetime import datetime
 import json
 from digi.xbee.devices import XBeeDevice
 
-serial_port = "COM5"
+serial_port = "/dev/tty.usbserial-A21SPQED" # On MacOS
 baud_rate = 57600
 REMOTE_NODE_ID = "Router"
 
 device = XBeeDevice(serial_port, baud_rate)
 remote = None
+
+def setup_xbee():
+    global remote
+    device.open()
+    xbee_network = device.get_network()
+    remote = xbee_network.discover_device(REMOTE_NODE_ID)
+
+    if remote is None:
+        raise Exception("Coudn't connect to %s", remote.get_64bit_addr())
 
 class CAN_value:
     """
@@ -121,7 +130,13 @@ def accumulator_worker(lock: threading.Lock):
 
 
 if __name__ == "__main__":
+    # Initial setup
     construct_tags_to_indices('can_table.csv')
+    setup_xbee()
+    xbee_network = device.get_network()
+    remote = xbee_network.discover_device(REMOTE_NODE_ID)
+    if remote is None:
+        raise Exception("Coudn't connect to %s", remote.get_64bit_addr())
 
     # lock for managing access to global row
     lock = threading.Lock()
@@ -130,16 +145,9 @@ if __name__ == "__main__":
     acc = threading.Thread(target=accumulator_worker, args=(lock,), daemon=True)
     acc.start()
 
-    # TODO: change from printing to sending over xbee
-    with device:
-        xbee_network = device.get_network()
-        remote = xbee_network.discover_device(REMOTE_NODE_ID)
-        if remote is None:
-            raise Exception("Coudn't connect to %s", remote.get_64bit_addr())
-
-        while True:
-            time.sleep(2)
-            with lock:
-                row.stamp()
-                device.send_data(remote, row.to_json())
-                # print(row.to_json())
+    while True:
+        time.sleep(2)
+        with lock:
+            row.stamp()
+            device.send_data(remote, row.to_json())
+            # print(row.to_json())
