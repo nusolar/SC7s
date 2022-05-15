@@ -49,9 +49,9 @@ class Row:
 
     def to_json(self) -> str:
         dict = {}
+        dict['timestamp'] = self.timestamp
         for tag in sendables:
             dict[tag] = self.lst[tags_to_indices[tag]].get_value()
-        dict['timestamp'] = self.timestamp
         return json.dumps(dict)
 
 # Set of CAN values to be sent to the base-station
@@ -114,7 +114,6 @@ def accumulator_worker(lock: threading.Lock):
 
 if __name__ == "__main__":
     construct_tags_to_indices('can_table.csv')
-    print("TABLE:", tags_to_indices)
 
     # lock for managing access to global row
     lock = threading.Lock()
