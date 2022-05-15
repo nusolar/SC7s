@@ -3,6 +3,7 @@ import threading
 import time
 import csv
 from datetime import datetime
+import json
 
 class CAN_value:
     """
@@ -38,7 +39,6 @@ class Row:
         self.lst = [CAN_value() for i in range(len(sendables))]
 
     def __str__(self):
-        self.stamp()
         string = str(self.timestamp)
         for can_val in self.lst:
             string += " " + str(can_val.get_value())
@@ -46,6 +46,13 @@ class Row:
 
     def stamp(self):
         self.timestamp = datetime.timestamp(datetime.now())
+
+    def to_json(self) -> str:
+        dict = {}
+        for tag in sendables:
+            dict[tag] = self.lst[tags_to_indices[tag]].get_value()
+        dict['timestamp'] = self.timestamp
+        return json.dumps(dict)
 
 # Set of CAN values to be sent to the base-station
 sendables = {'15VS', '33VS', '19VS'}
@@ -120,4 +127,5 @@ if __name__ == "__main__":
     while True:
         time.sleep(2)
         with lock:
-            print(row)
+            row.stamp()
+            print(row.to_json())
