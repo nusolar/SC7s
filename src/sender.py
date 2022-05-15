@@ -4,7 +4,15 @@ import threading
 import time
 import csv
 from datetime import datetime
+import json
 from digi.xbee.devices import XBeeDevice
+
+serial_port = "COM5"
+baud_rate = 57600
+REMOTE_NODE_ID = "Router"
+
+device = XBeeDevice(serial_port, baud_rate)
+remote = None
 
 class CAN_value:
     """
@@ -40,7 +48,6 @@ class Row:
         self.lst = [CAN_value() for i in range(len(sendables))]
 
     def __str__(self):
-        self.stamp()
         string = str(self.timestamp)
         for can_val in self.lst:
             string += " " + str(can_val.get_value())
@@ -49,11 +56,12 @@ class Row:
     def stamp(self):
         self.timestamp = datetime.timestamp(datetime.now())
 
-    def make_dict(self):
-        row_dict = {"Timestamp": self.timestamp}
+    def to_json(self) -> str:
+        dict = {}
+        dict['timestamp'] = self.timestamp
         for tag in sendables:
-            row_dict[tag] = self.lst[tags_to_indices[tag]]
-        return row_dict
+            dict[tag] = self.lst[tags_to_indices[tag]].get_value()
+        return json.dumps(dict)
 
 # Set of CAN values to be sent to the base-station
 sendables = {'15VS', '33VS', '19VS'}
@@ -106,7 +114,7 @@ def accumulator_worker(lock: threading.Lock):
     """
     r = Receiver(serial_port='/dev/tty.usbserial-AC00QTXJ')
     for packet in r.get_packets_from_file('../examples/collected_cleaned.dat'):
-        time.sleep(0.01)
+        time.sleep(0.01) # TODO: remove when getting data from serial
         if packet['Tag'] in sendables:
             with lock:
                 row.lst[tags_to_indices[packet['Tag']]].pass_value(packet['data'])
@@ -135,7 +143,6 @@ def setup_xbee():
 
 if __name__ == "__main__":
     construct_tags_to_indices('can_table.csv')
-    print("TABLE:", tags_to_indices)
 
     # lock for managing access to global row
     lock = threading.Lock()
@@ -144,17 +151,16 @@ if __name__ == "__main__":
     acc = threading.Thread(target=accumulator_worker, args=(lock,), daemon=True)
     acc.start()
 
-    device, remote = setup_xbee()
-
-    while(True):
-        time.sleep(2)
-        with lock:
-            print("Sending data to %s >> %s..." % (remote.get_64bit_addr(), row))
-            json_row = json.dumps(row.make_dict())
-            device.send_data(remote, json_row)
-
     # TODO: change from printing to sending over xbee
-    # while True:
-    #     time.sleep(2)
-    #     with lock:
-    #         print(row)
+    with device:
+        xbee_network = device.get_network()
+        remote = xbee_network.discover_device(REMOTE_NODE_ID)
+        if remote is None:
+            raise Exception("Coudn't connect to %s", remote.get_64bit_addr())
+
+        while True:
+            time.sleep(2)
+            with lock:
+                row.stamp()
+                device.send_data(remote, row.to_json())
+                # print(row.to_json())
