@@ -4,6 +4,14 @@ import time
 import csv
 from datetime import datetime
 import json
+from digi.xbee.devices import XBeeDevice
+
+serial_port = "COM5"
+baud_rate = 57600
+REMOTE_NODE_ID = "Router"
+
+device = XBeeDevice(serial_port, baud_rate)
+remote = None
 
 class CAN_value:
     """
@@ -106,7 +114,7 @@ def accumulator_worker(lock: threading.Lock):
     """
     r = Receiver(serial_port='/dev/tty.usbserial-AC00QTXJ')
     for packet in r.get_packets_from_file('../examples/collected_cleaned.dat'):
-        time.sleep(0.01)
+        time.sleep(0.01) # TODO: remove when getting data from serial
         if packet['Tag'] in sendables:
             with lock:
                 row.lst[tags_to_indices[packet['Tag']]].pass_value(packet['data'])
@@ -123,8 +131,15 @@ if __name__ == "__main__":
     acc.start()
 
     # TODO: change from printing to sending over xbee
-    while True:
-        time.sleep(2)
-        with lock:
-            row.stamp()
-            print(row.to_json())
+    with device:
+        xbee_network = device.get_network()
+        remote = xbee_network.discover_device(REMOTE_NODE_ID)
+        if remote is None:
+            raise Exception("Coudn't connect to %s", remote.get_64bit_addr())
+
+        while True:
+            time.sleep(2)
+            with lock:
+                row.stamp()
+                device.send_data(remote, row.to_json())
+                # print(row.to_json())
