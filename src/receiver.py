@@ -39,12 +39,14 @@ class Receiver:
         elif self.interface == 'pican':
             with can.interface.Bus(channel='can0', bustype='socketcan') as bus:
                 for msg in bus:
-                    msg = str(msg)
-                    # RegEx magic
-                    tag = re.findall('(?<=ID: 0)[0-9]+', msg)[0]
-                    data = re.findall('(?<= )([0-9a-f]{2})(?= )', msg)
-                    data = ''.join(data) # concatenate all the hexits into a string
-                    print(tag + data)
+                    # msg = str(msg)
+                    # # RegEx magic
+                    # tag = re.findall('(?<=ID: 0)[0-9]+', msg)[0]
+                    # data = re.findall('(?<= )([0-9a-f]{2})(?= )', msg)
+                    # data = ''.join(data) # concatenate all the hexits into a string
+                    # print(tag + data)
+                    tag = int(msg.arbitration_id, 16)
+                    data = msg.data.decode('ascii')
                     packet = can_parser.parse(tag + data)
                     for item in packet:
                         yield item
