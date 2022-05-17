@@ -1,12 +1,13 @@
 #database stuff for contacts list
 #this is the code that only interacts with the user
 
+import time
 import can_db #from same folder
 from digi.xbee.devices import XBeeDevice
 import json
 
-PORT = "COM5"
-BAUD_RATE = 57600
+PORT = "COM9"
+BAUD_RATE = 9600
 
 #open database connection
 connection = can_db.connect()
@@ -29,11 +30,13 @@ def main():
             #print(xbee_message.data.decode())
             json_row = json.loads(xbee_message.data)
             print(json_row)
-            can_db.add_row(connection, list(json_row.values()))
+            can_db.add_row(connection, json_row)
 
         device.add_data_received_callback(data_receive_callback)
 
         print("Waiting for data...\n")
+        input()
+        time.sleep(1000)
 
     finally:
         if device is not None and device.is_open():

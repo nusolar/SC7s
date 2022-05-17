@@ -1,4 +1,3 @@
-from curses import baudrate
 from digi.xbee.devices import XBeeDevice
 import serial
 
