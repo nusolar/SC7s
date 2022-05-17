@@ -3,13 +3,14 @@
 
 import sqlite3
 
-g = ["KEY", "Timestamp" , "15VS", "19VS", "33VS"]
+g = ["KEY", "Timestamp" , "15VS", "19VS", "33VS", "MPPCOV", "MPTC", "MPCT"]
 
 #add queries separately so it's easier to change later on
 CREATE_CAN_TABLE = """CREATE TABLE IF NOT EXISTS can_test_db 
-(id INTEGER PRIMARY KEY, Timestamp TEXT, VS15 REAL, VS19 REAL, VS33 REAL);"""
-
-INSERT_ROW = "INSERT INTO contacts (Timestamp, VS15, VS19, VS33) VALUES (?, ?, ?, ?);" #include inputs for ? when used
+(Timestamp TEXT, [15VS] REAL, [19VS] REAL, [33VS] REAL, MPPCOV REAL, MPTC REAL, MPCT REAL);"""
+#id INTEGER PRIMARY KEY, 
+INSERT_ROW = "INSERT INTO can_test_db (Timestamp, 15VS, 19VS, 33VS, MPPCOV, MPTC, MPCT) VALUES (?, ?, ?, ?, ?, ?, ?);" #include inputs for ? when used
+INSERT_VAL = "INSERT INTO can_test_db VALUES (?, ?, ?, ?, ?, ?, ?)"
 
 GET_ALL_DATA = "SELECT * FROM can_test_db;"
 GET_ALL_DATA_REV = "SELECT * FROM can_test_db ORDER BY id DESC;"
@@ -20,24 +21,29 @@ REMOVE_CONTACT = "DELETE FROM can_test_db WHERE id = ?;"
 
 def connect():
     #open data file. if not there, create one
-    return sqlite3.connect("cantest_data.db", isolation_level=None)
+    return sqlite3.connect("cantest_data.db", isolation_level=None, check_same_thread=False)
 
 def create_tables(connection):
     #context manager, when we create database, it gets saved to the ^^ file
     with connection:
         connection.execute(CREATE_CAN_TABLE)
 
-def add_row(connection, row):
-    Timestamp = row[0]
-    VS15 = row[1]
-    VS19 = row[2]
-    VS33 = row[33]
+def add_row(connection, json_row):
+    # Timestamp = row[0]
+    # VS15 = row[1]
+    # VS19 = row[2]
+    # VS33 = row[3]
+    # MPPCOV = row[4]
+    # MPTC = row[5]
+    # MPCT = row[6]
+    # with connection:
+    #     connection.execute(INSERT_ROW, (Timestamp, VS15, VS19, VS33, MPPCOV, MPTC, MPCT)) #second param has to be tuple
     with connection:
-        connection.execute(INSERT_ROW, (Timestamp, VS15, VS19, VS33)) #second param has to be tuple
+        connection.execute(INSERT_VAL, (json_row["timestamp"], json_row["15VS"], json_row["19VS"], json_row["33VS"], json_row["MPPCOV"], json_row["MPTC"], json_row["MPCT"])) #second param has to be tuple
 
 def get_all_data(connection):
     with connection:
-        return connection.execute(GET_ALL_DATA_REV).fetchall()
+        return connection.execute(GET_ALL_DATA).fetchall()
 
 def sort_by_field(connection, field):
     with connection:

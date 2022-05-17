@@ -1,3 +1,4 @@
+import json
 from receiver import Receiver
 import threading
 import time
@@ -84,7 +85,6 @@ tags_to_indices = {}
 row = Row()
 
 
-
 def construct_tags_to_indices(table_file: str):
     """
     Determine the index into the row list from the CAN value name.
@@ -127,6 +127,27 @@ def accumulator_worker(lock: threading.Lock):
         if packet['Tag'] in sendables:
             with lock:
                 row.lst[tags_to_indices[packet['Tag']]].pass_value(packet['data'])
+
+def setup_xbee():
+    #Xbee RF Modem info
+    serial_port_xbee = "COM5" #rPi uses /dev/ttyUSB#
+    baud_rate_xbee = 57600 # or 9600 for the other one
+    REMOTE_NODE_ID = "Router"
+
+    device = XBeeDevice(serial_port_xbee, baud_rate_xbee)
+
+    device.open()
+
+    xbee_network = device.get_network()
+
+    remote = xbee_network.discover_device(REMOTE_NODE_ID)
+
+    #check if it found the other modem
+    if remote is None:
+        print("Coudn't do it.")
+        exit(1)
+
+    return device, remote
 
 
 if __name__ == "__main__":
