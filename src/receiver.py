@@ -1,10 +1,6 @@
-from random import choices
 from canparse import CANParser
-from time import time
 import serial
-from threading import Thread
 import can
-import re
 
 class Receiver:
     """Receives & decodes CAN packets from a radio transmitter."""
@@ -39,8 +35,8 @@ class Receiver:
         elif self.interface == 'pican':
             with can.interface.Bus(channel='can0', bustype='socketcan') as bus:
                 for msg in bus:
-                    tag = int(msg.arbitration_id, 16)
-                    data = msg.data.decode('ascii')
+                    tag = hex(msg.arbitration_id)[2:]
+                    data = msg.data.hex()
                     packet = can_parser.parse(tag + data)
                     for item in packet:
                         yield item
