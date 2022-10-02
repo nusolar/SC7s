@@ -1,5 +1,8 @@
 # SC-7 Telemetry
 Python parsing for new motor-controllers.
+
+![Alt text](telemetry-system.png?raw=true "Telemetry System")
+
 ## Using the code
 The main script is contained in no_gui.py, and running `$ python no_gui.py`
 in the terminal will print parsed CAN data to standard output. The data

@@ -16,7 +16,7 @@ import json
 from digi.xbee.devices import XBeeDevice
 
 # TODO: Replace with the serial port where your local module is connected to.
-PORT = "COM9"
+PORT = "/dev/tty.usbserial-A21SPPJ6"
 # TODO: Replace with the baud rate of your local module.
 BAUD_RATE = 9600
 
@@ -31,10 +31,10 @@ def main():
         device.open()
 
         def data_receive_callback(xbee_message):
-            json_row = json.loads(xbee_message.data)
-            print(json_row)
-            #print("From %s >> %s" % (xbee_message.remote_device.get_64bit_addr(),
-             #                        xbee_message.data.decode()))
+            # json_row = json.loads(xbee_message.data)
+            # print(xbee_message.data.decode())
+            print("From %s >> %s" % (xbee_message.remote_device.get_64bit_addr(),
+                                    xbee_message.data.decode()))
 
         device.add_data_received_callback(data_receive_callback)
 
