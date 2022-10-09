@@ -1,33 +1,36 @@
-#database stuff for contacts list
-#this is the code that only interacts with the user
+# database stuff for contacts list
+# this is the code that only interacts with the user
 
 import time
-import can_db #from same folder
+import can_db  # from same folder
 from digi.xbee.devices import XBeeDevice
 import json
 
-PORT = "COM9"
-BAUD_RATE = 9600
+PORT = "/dev/tty.usbserial-A21SPQED"
+BAUD_RATE = 57600
 
-#open database connection
+# open database connection
 connection = can_db.connect()
 can_db.create_tables(connection)
-#initial list of contacts
+# initial list of contacts
 contacts = can_db.get_all_data(connection)
+
 
 def make_row(row_dict):
     pass
+
 
 def main():
 
     device = XBeeDevice(PORT, BAUD_RATE)
 
+
     try:
         device.open()
 
         def data_receive_callback(xbee_message):
-            #xbee_message.remote_device.get_64bit_addr()
-            #print(xbee_message.data.decode())
+            # xbee_message.remote_device.get_64bit_addr()
+            # print(xbee_message.data.decode())
             json_row = json.loads(xbee_message.data)
             print(json_row)
             can_db.add_row(connection, json_row)
