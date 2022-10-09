@@ -1,5 +1,6 @@
 import sqlite3
 from fastapi import FastAPI
+import time
 
 CREATE_TABLE = """CREATE TABLE IF NOT EXISTS test (word TEXT, number REAL);"""
 INSERT_ROW = "INSERT INTO test (word, number) VALUES (?, ?);"
@@ -18,11 +19,15 @@ connection = connect()
 
 @app.get("/dump")
 def dump():
+    return connection.execute(GET_ALL_DATA).fetchall()
+
+@app.get("/latest")
+def latest():
     return connection.execute(GET_ALL_DATA)
 
 @app.get("/fill")
 def fill():
-    connection.execute(INSERT_ROW, ('hello', 123))
+    connection.execute(INSERT_ROW, ('time', time.time_ns()))
 
 @app.get("/")
 async def root():
