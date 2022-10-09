@@ -6,10 +6,10 @@ import time
 
 #COM5 - 57600/8/N/1/N - AT
 # serial_port = "COM5"
-serial_port = "/dev/tty.usbserial-A21SPPJ6" # On MacOS
-baud_rate = 9600
+serial_port = "/dev/tty.usbserial-A21SPQED" # On MacOS
+baud_rate = 57600
 DATA_TO_SEND = "First One" 
-REMOTE_NODE_ID = "Node"
+REMOTE_NODE_ID = "Router"
 
 device = XBeeDevice(serial_port, baud_rate)
 remote = None
