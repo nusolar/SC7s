@@ -122,7 +122,7 @@ def accumulator_worker(lock: threading.Lock):
     updates the row list.
     """
     r = Receiver(serial_port='/dev/tty.usbserial-AC00QTXJ')
-    for packet in r.get_packets_from_file('../examples/collected_cleaned.dat'):
+    for packet in r.get_packets_from_file('../examples/collected_cleaned.txt'):
         time.sleep(0.01) # TODO: remove when getting data from serial
         if packet['Tag'] in sendables:
             with lock:
