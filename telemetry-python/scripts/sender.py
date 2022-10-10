@@ -1,5 +1,5 @@
 import json
-from receiver import Receiver
+from src.can.receiver import Receiver
 import threading
 import time
 import csv
