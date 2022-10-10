@@ -2,6 +2,8 @@
 #this is the code that only interacts with the database
 
 import sqlite3
+import sys
+from pathlib import Path
 
 g = ["KEY", "Timestamp" , "15VS", "19VS", "33VS", "MPPCOV", "MPTC", "MPCT"]
 
@@ -21,7 +23,9 @@ REMOVE_CONTACT = "DELETE FROM can_test_db WHERE id = ?;"
 
 def connect():
     #open data file. if not there, create one
-    return sqlite3.connect("cantest_data.db", isolation_level=None, check_same_thread=False)
+    # os and pathlib are used to create the db file in the same location every
+    # time.
+    return sqlite3.connect(str(Path(sys.argv[0]).parent.parent) / Path("cantest_data.db"), isolation_level=None, check_same_thread=False)
 
 def create_tables(connection):
     #context manager, when we create database, it gets saved to the ^^ file
