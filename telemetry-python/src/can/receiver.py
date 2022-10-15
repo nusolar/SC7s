@@ -1,11 +1,13 @@
 from src.can.canparse import CANParser
 import serial
 import can
+import sys
+from pathlib import Path
 
 class Receiver:
     """Receives & decodes CAN packets from a radio transmitter."""
     def __init__(self,
-        can_table: str = 'can_table.csv',
+        can_table: str = str(Path(sys.argv[0]).parent.parent / Path('src/can/can_table.csv')),
         log_file: str = 'log.txt',
         serial_port: str = '/dev/tty.usbserial-AC00QTXJ',
         baud_rate: int = 500000,
