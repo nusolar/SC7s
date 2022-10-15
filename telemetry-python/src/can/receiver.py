@@ -1,4 +1,4 @@
-from canparse import CANParser
+from src.can.canparse import CANParser
 import serial
 import can
 

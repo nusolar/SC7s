@@ -1,4 +1,4 @@
-import can_db #from same folder
+import src.backend.can_db as can_db
 
 #open database connection
 connection = can_db.connect()
