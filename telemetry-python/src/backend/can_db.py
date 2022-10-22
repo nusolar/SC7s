@@ -2,8 +2,7 @@
 #this is the code that only interacts with the database
 
 import sqlite3
-import sys
-from pathlib import Path
+import pkg_resources, os
 
 g = ["KEY", "Timestamp" , "15VS", "19VS", "33VS", "MPPCOV", "MPTC", "MPCT"]
 
@@ -25,7 +24,12 @@ def connect():
     #open data file. if not there, create one
     # os and pathlib are used to create the db file in the same location every
     # time.
-    return sqlite3.connect(str(Path(sys.argv[0]).parent.parent) / Path("cantest_data.db"), isolation_level=None, check_same_thread=False)
+    return sqlite3.connect(pkg_resources.resource_filename(
+                               __name__,
+                               os.path.join(os.pardir, os.pardir, 'resources', 'cantest_data.db')
+                           ), 
+                           isolation_level=None, 
+                           check_same_thread=False)
 
 def create_tables(connection):
     #context manager, when we create database, it gets saved to the ^^ file

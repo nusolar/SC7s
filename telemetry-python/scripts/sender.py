@@ -6,6 +6,7 @@ import csv
 from datetime import datetime
 import json
 from digi.xbee.devices import XBeeDevice
+import pkg_resources, os
 
 serial_port = "/dev/tty.usbserial-A21SPQED" # On MacOS
 baud_rate = 57600
@@ -152,7 +153,10 @@ def accumulator_worker(lock: threading.Lock):
 
 if __name__ == "__main__":
     # Initial setup
-    construct_tags_to_indices('can_table.csv')
+    construct_tags_to_indices(pkg_resources.resource_filename(
+        __name__,
+        os.path.join(os.pardir, 'src', 'resources', 'can_table.csv')
+    ))
     print("1")
     setup_xbee()
     print("2")
