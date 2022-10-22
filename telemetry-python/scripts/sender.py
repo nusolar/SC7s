@@ -1,11 +1,12 @@
 import json
-from receiver import Receiver
+from src.can.receiver import Receiver
 import threading
 import time
 import csv
 from datetime import datetime
 import json
 from digi.xbee.devices import XBeeDevice
+import pkg_resources, os
 
 serial_port = "/dev/tty.usbserial-A21SPQED" # On MacOS
 baud_rate = 57600
@@ -122,7 +123,7 @@ def accumulator_worker(lock: threading.Lock):
     updates the row list.
     """
     r = Receiver(serial_port='/dev/tty.usbserial-AC00QTXJ')
-    for packet in r.get_packets_from_file('../examples/collected_cleaned.txt'):
+    for packet in r.get_packets_from_file('../example-data/collected_cleaned.txt'):
         time.sleep(0.01) # TODO: remove when getting data from serial
         if packet['Tag'] in sendables:
             with lock:
@@ -152,7 +153,10 @@ def accumulator_worker(lock: threading.Lock):
 
 if __name__ == "__main__":
     # Initial setup
-    construct_tags_to_indices('can_table.csv')
+    construct_tags_to_indices(pkg_resources.resource_filename(
+        __name__,
+        os.path.join(os.pardir, 'src', 'resources', 'can_table.csv')
+    ))
     print("1")
     setup_xbee()
     print("2")

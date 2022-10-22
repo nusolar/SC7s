@@ -2,7 +2,7 @@
 # this is the code that only interacts with the user
 
 import time
-import can_db  # from same folder
+import src.backend.can_db as can_db
 from digi.xbee.devices import XBeeDevice
 import json
 
@@ -10,9 +10,9 @@ PORT = "/dev/tty.usbserial-A21SPQED"
 BAUD_RATE = 57600
 
 # open database connection
+# initial list of contacts
 connection = can_db.connect()
 can_db.create_tables(connection)
-# initial list of contacts
 contacts = can_db.get_all_data(connection)
 
 

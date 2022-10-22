@@ -1,5 +1,5 @@
 import argparse
-from receiver import Receiver
+from src.can.receiver import Receiver
 
 # parser = argparse.ArgumentParser()
 

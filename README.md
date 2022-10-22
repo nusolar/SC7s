@@ -20,7 +20,7 @@ The important thing to know is that if you want to read directly of the serial
 port, you should call `Reciever.get_packets` instead of 
 `Reciever.get_packets_from_file`. If you want to use `get_packet_from_file`, 
 as it stands right now, you have to specifiy a filename referring to a 
-'cleaned' data file (like examples/collected_cleaned.txt).
+'cleaned' data file (like `data/collected_cleaned.txt`).
 
 ### reciever.py
 The purpose of the `Reciever` class is to open a connection with a serial
