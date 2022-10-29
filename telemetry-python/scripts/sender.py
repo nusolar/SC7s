@@ -22,7 +22,7 @@ def setup_xbee():
     remote = xbee_network.discover_device(REMOTE_NODE_ID)
 
     if remote is None:
-        raise Exception("Coudn't connect to %s", remote.get_64bit_addr())
+        raise Exception("Coudn't connect to XBee")
 
 class CAN_value:
     """
@@ -55,7 +55,7 @@ class Row:
     """
     def __init__(self):
         self.timestamp = None
-        self.lst = [CAN_value() for i in range(len(sendables))]
+        self.lst = [CAN_value() for _ in range(len(sendables))]
 
     def __str__(self):
         string = str(self.timestamp)
@@ -129,42 +129,18 @@ def accumulator_worker(lock: threading.Lock):
             with lock:
                 row.lst[tags_to_indices[packet['Tag']]].pass_value(packet['data'])
 
-# def setup_xbee():
-    # #Xbee RF Modem info
-    # serial_port_xbee = "/dev/tty.usbserial-A21SPQED" #rPi uses /dev/ttyUSB#
-    # baud_rate_xbee = 57600 # or 9600 for the other one
-    # REMOTE_NODE_ID = "Router"
-
-    # device = XBeeDevice(serial_port_xbee, baud_rate_xbee)
-
-    # device.open()
-
-    # xbee_network = device.get_network()
-
-    # remote = xbee_network.discover_device(REMOTE_NODE_ID)
-
-    # #check if it found the other modem
-    # if remote is None:
-        # print("Coudn't do it.")
-        # exit(1)
-
-    # return device, remote
-
-
 if __name__ == "__main__":
     # Initial setup
     construct_tags_to_indices(pkg_resources.resource_filename(
         __name__,
         os.path.join(os.pardir, 'src', 'resources', 'can_table.csv')
     ))
-    print("1")
+
     setup_xbee()
-    print("2")
     xbee_network = device.get_network()
-    print("3")
     remote = xbee_network.discover_device(REMOTE_NODE_ID)
     if remote is None:
-        raise Exception("Coudn't connect to %s", remote.get_64bit_addr())
+        raise Exception("Coudn't connect to XBee")
 
     # lock for managing access to global row
     lock = threading.Lock()

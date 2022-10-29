@@ -1,17 +1,23 @@
-#for can_recv_app.py
-#this is the code that only interacts with the database
+from typing import Any
 
 import sqlite3
 import pkg_resources, os
 
-g = ["KEY", "Timestamp" , "15VS", "19VS", "33VS", "MPPCOV", "MPTC", "MPCT"]
+fields = ("timestamp TEXT", 
+          "[15VS] REAL", "[19VS] REAL", "[33VS] REAL", 
+          "MPPCOV REAL", "MPTC REAL", "MPCT REAL")
 
-#add queries separately so it's easier to change later on
-CREATE_CAN_TABLE = """CREATE TABLE IF NOT EXISTS can_test_db 
-(Timestamp TEXT, [15VS] REAL, [19VS] REAL, [33VS] REAL, MPPCOV REAL, MPTC REAL, MPCT REAL);"""
-#id INTEGER PRIMARY KEY, 
-INSERT_ROW = "INSERT INTO can_test_db (Timestamp, 15VS, 19VS, 33VS, MPPCOV, MPTC, MPCT) VALUES (?, ?, ?, ?, ?, ?, ?);" #include inputs for ? when used
-INSERT_VAL = "INSERT INTO can_test_db VALUES (?, ?, ?, ?, ?, ?, ?)"
+# names of all the fields
+field_names = tuple(field.split(" ")[0].replace("[", "").replace("]", "") for field in fields)
+
+# question mark placeholder for SQL query, e.g. (?, ?, ?, ?)
+qmarks = tuple("?" for _ in fields)
+
+# create the table
+CREATE_CAN_TABLE = f"CREATE TABLE IF NOT EXISTS can_test_db ({', '.join(fields)});"
+
+# insert an entire row
+INSERT_ROW = f"INSERT INTO can_test_db VALUES ({', '.join(qmarks)});"
 
 GET_ALL_DATA = "SELECT * FROM can_test_db;"
 GET_ALL_DATA_REV = "SELECT * FROM can_test_db ORDER BY id DESC;"
@@ -21,59 +27,29 @@ SORT_BY_REV = "SELECT * FROM can_test_db ORDER BY {field} DESC;"
 REMOVE_CONTACT = "DELETE FROM can_test_db WHERE id = ?;"
 
 def connect():
-    #open data file. if not there, create one
-    # os and pathlib are used to create the db file in the same location every
-    # time.
     return sqlite3.connect(pkg_resources.resource_filename(
                                __name__,
-                               os.path.join(os.pardir, os.pardir, 'resources', 'cantest_data.db')
+                               os.path.join(os.pardir, 'resources', 'cantest_data.db')
                            ), 
                            isolation_level=None, 
                            check_same_thread=False)
 
-def create_tables(connection):
-    #context manager, when we create database, it gets saved to the ^^ file
+def create_tables(connection: sqlite3.Connection):
     with connection:
         connection.execute(CREATE_CAN_TABLE)
 
-def add_row(connection, json_row):
-    # Timestamp = row[0]
-    # VS15 = row[1]
-    # VS19 = row[2]
-    # VS33 = row[3]
-    # MPPCOV = row[4]
-    # MPTC = row[5]
-    # MPCT = row[6]
-    # with connection:
-    #     connection.execute(INSERT_ROW, (Timestamp, VS15, VS19, VS33, MPPCOV, MPTC, MPCT)) #second param has to be tuple
+def add_row(connection: sqlite3.Connection, json_row: dict[str, Any]):
     with connection:
-        connection.execute(INSERT_VAL, (json_row["timestamp"], json_row["15VS"], json_row["19VS"], json_row["33VS"], json_row["MPPCOV"], json_row["MPTC"], json_row["MPCT"])) #second param has to be tuple
+        connection.execute(INSERT_ROW, tuple(json_row[field] for field in field_names))
 
-def get_all_data(connection):
+def get_all_data(connection: sqlite3.Connection):
     with connection:
         return connection.execute(GET_ALL_DATA).fetchall()
 
-def sort_by_field(connection, field):
+def sort_by_field(connection: sqlite3.Connection, field: str):
     with connection:
         return connection.execute(SORT_BY.format(field=field)).fetchall()
-        #fetch all gives us a list of rows
 
-def reverse_sort_by_field(connection, field):
-    if ("Timestamp" in field):
-        field = "Timestamp"
-    elif ("15VS" in field):
-        field = "15VS"
-    elif ("19VS" in field):
-        field = "19VS"
-    elif ("33VS" in field):
-        field = "33VS"
-    else:
-        field = "id"
-
+def remove_row(connection: sqlite3.Connection, id_: int):
     with connection:
-        return connection.execute(SORT_BY_REV.format(field=field)).fetchall()
-        #fetch all gives us a list of rows
-
-def remove_row(connection, id):
-    with connection:
-        connection.execute(REMOVE_CONTACT, (id,)) #second param has to be tuple
+        connection.execute(REMOVE_CONTACT, (id_,)) # make sure second param is a tuple

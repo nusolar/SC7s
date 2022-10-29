@@ -5,6 +5,7 @@ import time
 import src.backend.can_db as can_db
 from digi.xbee.devices import XBeeDevice
 import json
+from typing import Any
 
 PORT = "/dev/tty.usbserial-A21SPQED"
 BAUD_RATE = 57600
@@ -13,7 +14,6 @@ BAUD_RATE = 57600
 # initial list of contacts
 connection = can_db.connect()
 can_db.create_tables(connection)
-contacts = can_db.get_all_data(connection)
 
 
 def make_row(row_dict):
@@ -27,11 +27,12 @@ def main():
 
     try:
         device.open()
+        print("opened")
 
         def data_receive_callback(xbee_message):
             # xbee_message.remote_device.get_64bit_addr()
             # print(xbee_message.data.decode())
-            json_row = json.loads(xbee_message.data)
+            json_row: dict[str, Any] = json.loads(xbee_message.data)
             print(json_row)
             can_db.add_row(connection, json_row)
 
