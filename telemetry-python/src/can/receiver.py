@@ -1,6 +1,8 @@
+from pathlib import Path
 from src.can.canparse import CANParser
 import serial
 import can
+import cantools
 import os
 import pkg_resources
 
@@ -49,13 +51,19 @@ class Receiver:
             raise Exception('Invalid interface')
 
 
-    def get_packets_from_file(self, input_file_name: str) -> iter:
+    def get_packets_from_file(self, path: Path) -> iter:
         """Generates CAN packets from file. Useful for testing."""
-        with open(input_file_name) as input_file:
+        with open(path, "r") as input_file:
             can_parser = CANParser(self.can_table)
             for line in input_file:
-                packet = can_parser.parse(line)
-                # packet['time'] = time()
+                can_id   = int(line[0:3], 16)
+                data = bytearray.fromhex(line[3:])
+                message = can.Message(arbitration_id=can_id, data=data)
+                cantools.db.Signal
+
+                tag = hex(message.arbitration_id)[2:]
+                data = message.data.hex()
+                packet = can_parser.parse(tag + data)
                 for item in packet:
                     yield item
 
