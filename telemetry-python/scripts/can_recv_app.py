@@ -10,10 +10,8 @@ PORT = "/dev/tty.usbserial-A21SPQED"
 BAUD_RATE = 57600
 
 # open database connection
-# initial list of contacts
 connection = can_db.connect()
 can_db.create_tables(connection)
-contacts = can_db.get_all_data(connection)
 
 
 def make_row(row_dict):

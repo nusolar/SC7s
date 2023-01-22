@@ -14,6 +14,7 @@ WIDTH = 500
 HEIGHT = 300
 BCK_COLOR = "#381b4d" #dark purple
 FG_COLOR = "#ebebeb" #silver
+CANUSB_PORT = '/dev/ttyUSB0'
 
 # CAN names to their values, global because it is accessed by multiple
 # threads. Initialized with the names for the values we choose to display.
@@ -191,7 +192,7 @@ class HomeFrame(Frame):
 # Worker function to receive packets off CAN line and
 # update displayables
 def receiver_worker():
-    r = Receiver(serial_port='/dev/ttyUSB0')
+    r = Receiver(serial_port=CANUSB_PORT)
     for item in r.get_packets():
         if item['Tag'] in displayables:
             displayables[item['Tag']] = item['data']
