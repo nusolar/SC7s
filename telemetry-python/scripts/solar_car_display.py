@@ -4,8 +4,10 @@ from tkinter import *
 from tkinter import ttk
 from tkinter import font as tkFont
 import threading
-from receiver import Receiver
-import time
+import can
+import cantools.database
+from pathlib import Path
+from definitions import PROJECT_ROOT
 
 #import gps frame that's in same folder
 import gps_display
@@ -18,7 +20,7 @@ FG_COLOR = "#ebebeb" #silver
 # CAN names to their values, global because it is accessed by multiple
 # threads. Initialized with the names for the values we choose to display.
 # For now these are dummy values.
-displayables = {"VVEL": 0.0, "15VS": 0.0, "EFLA": 0}
+displayables = {"Output_voltage": 0.0, "Output_current": 0.0, "Controller_temperature": 0}
 
 class CarDisplay(Tk):
     def __init__(self, *args, **kwargs):
@@ -179,22 +181,23 @@ class HomeFrame(Frame):
 
 
     def updater(self):
-        self.speed.set(round(displayables['VVEL'], 3))
-        self.voltage.set(round(displayables['15VS'], 3))
-        if displayables['EFLA'] != 0:
-            self.errors.set('Active errors!')
-        else:
-            self.errors.set('No active errors')
+        self.speed.set(round(displayables["Output_current"], 3))
+        self.voltage.set(round(displayables["Output_current"], 3))
+        self.errors.set(round(displayables["Controller_temperature"], 3))
         self.after(1000, self.updater)
 
 
 # Worker function to receive packets off CAN line and
 # update displayables
 def receiver_worker():
-    r = Receiver(serial_port='/dev/ttyUSB0')
-    for item in r.get_packets():
-        if item['Tag'] in displayables:
-            displayables[item['Tag']] = item['data']
+    db = cantools.database.load_file(Path(PROJECT_ROOT).joinpath("cantools-test").joinpath("out.dbc"))
+
+    with can.interface.Bus(channel='can0', bustype='socketcan') as bus:  # type: ignore
+        while True:
+            msg = bus.recv()
+            for k, v in db.decode_message(msg.arbitration_id, msg.data).items():
+                if k in displayables:
+                    displayables[k] = v
 
 
 

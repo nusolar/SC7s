@@ -1,7 +1,6 @@
 import argparse
 
 from src.can.receiver import Receiver
-from definitions import PROJECT_ROOT
 
 parser = argparse.ArgumentParser()
 
