@@ -7,27 +7,14 @@ from pathlib import Path
 from copy import deepcopy
 
 import can
-from cantools.database.can.database import Database
-from cantools.typechecking import SignalDictType, StringPathLike
 import cantools.database
-from cantools.database.can.formats import dbc
+from cantools.database.can.database import Database
+from cantools.typechecking import SignalDictType
 
 from definitions import PROJECT_ROOT
-from rowify import Row
-from stats import mock_value
-
-def add_dbc_file(self: Database, filename: StringPathLike, encoding: str = 'cp1252') -> None:
-        with open(filename, 'r', encoding=encoding) as fp:
-            string = fp.read()
-            database = dbc.load_string(string, self._strict, sort_signals=self._sort_signals) # type: ignore
-
-            self._messages += database.messages
-            self._nodes += database.nodes
-            self._buses = database.buses
-            self._version = database.version
-            self._dbc = database.dbc
-            self.refresh()
-
+from src.can.row import Row
+from src.can.stats import mock_value
+from src.can.util import add_dbc_file
 
 VIRTUAL_BUS_NAME = "virtbus"
 
@@ -36,8 +23,8 @@ row_lock = Lock()
 queue: Queue[str] = Queue()
 
 # The database used for parsing with cantools
-db = cast(Database, cantools.database.load_file(Path(PROJECT_ROOT).joinpath("src", "cantools-test", "mppt.dbc")))
-add_dbc_file(db, Path(PROJECT_ROOT).joinpath("src", "cantools-test", "motor_controller.dbc"))
+db = cast(Database, cantools.database.load_file(Path(PROJECT_ROOT).joinpath("src", "resources", "mppt.dbc")))
+add_dbc_file(db, Path(PROJECT_ROOT).joinpath("src", "resources", "motor_controller.dbc"))
 
 # The rows that will be added to the database
 rows = [Row(db, node.name) for node in db.nodes]
@@ -131,7 +118,7 @@ if __name__ == "__main__":
 
     # Use the main thread to deserialize rows and update the databse
     # as if it were running on the base station
-    conn   = sqlite3.connect(Path(PROJECT_ROOT).joinpath("src", "cantools-test", "virt.db"))
+    conn   = sqlite3.connect(Path(PROJECT_ROOT).joinpath("src", "resources", "virt.db"))
     cursor = conn.cursor()
 
     for row in rows:

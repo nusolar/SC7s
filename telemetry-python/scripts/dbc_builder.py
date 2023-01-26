@@ -68,13 +68,13 @@ class AbstractDbc():
 
 
 if __name__ == "__main__":
-    adbc = AbstractDbc(Path(PROJECT_ROOT).joinpath("src", "cantools-test", "abstract_mppt.dbc"),
+    adbc = AbstractDbc(Path(PROJECT_ROOT).joinpath("src", "resources", "abstract_mppt.dbc"),
                        [Device(DeviceType.MPPT, 0x600), Device(DeviceType.MPPT, 0x610)])
     db = adbc.create_real_dbc()
-    cantools.database.dump_file(db, Path(PROJECT_ROOT).joinpath("src", "cantools-test", "mppt.dbc"))
+    cantools.database.dump_file(db, Path(PROJECT_ROOT).joinpath("src", "resources", "mppt.dbc"))
 
-    adbc = AbstractDbc(Path(PROJECT_ROOT).joinpath("src", "cantools-test", "abstract_motor_controller.dbc"),
+    adbc = AbstractDbc(Path(PROJECT_ROOT).joinpath("src", "resources", "abstract_motor_controller.dbc"),
                        [Device(DeviceType.MOTOR_CONTROLLER, 0x400)])
     db = adbc.create_real_dbc()
-    cantools.database.dump_file(db, Path(PROJECT_ROOT).joinpath("src", "cantools-test", "motor_controller.dbc"))
+    cantools.database.dump_file(db, Path(PROJECT_ROOT).joinpath("src", "resources", "motor_controller.dbc"))
 
