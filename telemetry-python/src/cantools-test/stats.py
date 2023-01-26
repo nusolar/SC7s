@@ -17,6 +17,16 @@ MPMIC_STATS  = (7.0, 0.0)
 MPPCOV_STATS = (10.5, 0.2)
 MPPCT_STATS  = (23.65, 0.01)
 
+MCBV_STATS   = (12.93, 0.1)
+MCVD_STATS   = (0.4, 0.2)
+MCVQ_STATS   = (0.9, 0.2)
+MC15V_STATS  = (15.0, 0.2)
+MC3V3_STATS  = (3.3, 0.05)
+MC1V9_STATS  = (1.9, 0.05)
+MCHST_STATS  = (17.7, 0.2)
+MCMT_STATS   = (24.5, 0.2)
+MCDBT_STATS  = (20.9, 0.2)
+
 test_counters: dict[str, int] = {}
 
 def init_counter(node_name: str):
@@ -84,5 +94,67 @@ def mock_value(node_name: str, signal_name: str) -> float | int:
                 return 0 # TODO: maybe collect real data for sweep measurments
             case _:
                 return 0 # No error / limit flags are set, for simplicity
+    elif "MOTOR_CONTROLLER" in node_name:
+        match signal_name:
+            case "SerialNumber":
+                return 123456
+            case "TritiumID":
+                return 943206484
+            case "RxErrorCount":
+                return 0
+            case "TxErrorCount":
+                return 0
+            case "ActiveMotor":
+                return 0
+            case "ErrorFlags":
+                return 16
+            case "LimitFlags":
+                return 0
+            case "BusCurrent":
+                return 0.0
+            case "BusVoltage":
+                return random.normalvariate(*MCBV_STATS)
+            case "VehicleVelocity":
+                return 0.0
+            case "MotorVelocity":
+                return 0.0
+            case "PhaseCurrentB":
+                return 0.0
+            case "PhaseCurrentC":
+                return 0.0
+            case "Vd":
+                return random.normalvariate(*MCVD_STATS)
+            case "Vq":
+                return random.normalvariate(*MCVQ_STATS)
+            case "Id":
+                return 0.0
+            case "Iq":
+                return 0.0
+            case "BEMFq":
+                return 0.0
+            case "BEMFd":
+                return 0.0
+            case "Supply15V":
+                return random.normalvariate(*MC15V_STATS)
+            case "Supply3V3":
+                return random.normalvariate(*MC3V3_STATS)
+            case "Supply1V9":
+                return random.normalvariate(*MC1V9_STATS)
+            case "HeatsinkTemp":
+                return random.normalvariate(*MCHST_STATS)
+            case "MotorTemp":
+                return random.normalvariate(*MCMT_STATS)
+            case "DspBoardTemp":
+                return random.normalvariate(*MCDBT_STATS)
+            case "DCBusAh":
+                return 0.0
+            case "Odometer":
+                return 0.0
+            case "SlipSpeed":
+                return 0.0
+            case s if "Reserved" in s:
+                return 0.0
+            case _:
+                raise Exception(f"Unknown motor contoller signal name: {signal_name}")
     else:
         raise Exception(f"Unknown node: {node_name}")

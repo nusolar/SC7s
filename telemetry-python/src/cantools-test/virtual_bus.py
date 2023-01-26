@@ -8,12 +8,26 @@ from copy import deepcopy
 
 import can
 from cantools.database.can.database import Database
-from cantools.typechecking import SignalDictType
+from cantools.typechecking import SignalDictType, StringPathLike
 import cantools.database
+from cantools.database.can.formats import dbc
 
 from definitions import PROJECT_ROOT
 from rowify import Row
 from stats import mock_value
+
+def add_dbc_file(self: Database, filename: StringPathLike, encoding: str = 'cp1252') -> None:
+        with open(filename, 'r', encoding=encoding) as fp:
+            string = fp.read()
+            database = dbc.load_string(string, self._strict, sort_signals=self._sort_signals) # type: ignore
+
+            self._messages += database.messages
+            self._nodes += database.nodes
+            self._buses = database.buses
+            self._version = database.version
+            self._dbc = database.dbc
+            self.refresh()
+
 
 VIRTUAL_BUS_NAME = "virtbus"
 
@@ -22,11 +36,11 @@ row_lock = Lock()
 queue: Queue[str] = Queue()
 
 # The database used for parsing with cantools
-db: Database = cast(Database,
-                    cantools.database.load_file(Path(PROJECT_ROOT).joinpath("src", "cantools-test", "out.dbc")))
+db = cast(Database, cantools.database.load_file(Path(PROJECT_ROOT).joinpath("src", "cantools-test", "mppt.dbc")))
+add_dbc_file(db, Path(PROJECT_ROOT).joinpath("src", "cantools-test", "motor_controller.dbc"))
 
 # The rows that will be added to the database
-rows = [Row(db, name) for name in map(lambda node: node.name, db.nodes)]
+rows = [Row(db, node.name) for node in db.nodes]
 
 
 def device_worker(bus: can.ThreadSafeBus, my_messages:  list[cantools.database.Message]) -> None:
@@ -90,13 +104,6 @@ if __name__ == "__main__":
     # Upon reception, the main thread deserializes the row and inserts it into a
     # database table.
 
-    conn   = sqlite3.connect(Path(PROJECT_ROOT).joinpath("src", "cantools-test", "virt.db"))
-    cursor = conn.cursor()
-
-    for row in rows:
-        row.sql_create_table(cursor)
-    conn.commit()
-
     # Create a thread for each node in the database file. 
     # Each thread gets a copy of the bus for writing.
     # Each thread sends only the messages that the corresponding device would send.
@@ -109,8 +116,8 @@ if __name__ == "__main__":
 
     # Create a thread to read of the bus and maintain the rows
     accumulator = Thread(target=row_accumulator_worker,
-                                 args=(can.ThreadSafeBus(VIRTUAL_BUS_NAME, bustype='virtual'),),
-                                 daemon=True)
+                         args=(can.ThreadSafeBus(VIRTUAL_BUS_NAME, bustype='virtual'),),
+                         daemon=True)
 
     # Create a thread to serialize rows as would be necessary with XBees
     sender = Thread(target=sender_worker, daemon=True)
@@ -124,6 +131,13 @@ if __name__ == "__main__":
 
     # Use the main thread to deserialize rows and update the databse
     # as if it were running on the base station
+    conn   = sqlite3.connect(Path(PROJECT_ROOT).joinpath("src", "cantools-test", "virt.db"))
+    cursor = conn.cursor()
+
+    for row in rows:
+        row.sql_create_table(cursor)
+    conn.commit()
+
     while True:
         r = Row.deserialize(queue.get())
         r.sql_insert_row(cursor)

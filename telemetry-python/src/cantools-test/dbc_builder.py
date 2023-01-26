@@ -1,8 +1,12 @@
+from typing import cast
 from enum import Enum
 from copy import deepcopy
 
 from pathlib import Path
 import cantools.database
+from cantools.database.can.node import Node
+from cantools.database.can.message import Message
+from cantools.database.can.database import Database
 from definitions import PROJECT_ROOT
 
 class DeviceType(Enum):
@@ -21,36 +25,56 @@ class AbstractDbc():
         self.devices = devices
 
     def create_real_dbc(self) -> cantools.database.Database:
-        abstract_db: cantools.database.Database = cantools.database.load_file(self.path) # type: ignore
-        real_nodes: list[cantools.database.Node]       = []
-        real_messages: list[cantools.database.Message] = []
+        abstract_db = cast(Database, cantools.database.load_file(self.path))
+        real_nodes:    list[Node]    = []
+        real_messages: list[Message] = []
 
-        abstract_mppt             = [node for node in abstract_db.nodes if node.name == "ABSTRACT_MPPT"][0]
-        # abstract_motor_controller = [node for node in db.nodes if node.name == "ABSTRACT_MOTOR_CONTROLLER"][0]
-        # abstract_bms              = [node for node in db.nodes if node.name == "ABSTRACT_BMS"][0]
+        abstract_mppt             = next((node for node in abstract_db.nodes \
+                                            if node.name == "ABSTRACT_MPPT"),
+                                         None)
+        abstract_motor_controller = next((node for node in abstract_db.nodes \
+                                            if node.name == "ABSTRACT_MOTOR_CONTROLLER"),
+                                         None)
+        abstract_bms              = next((node for node in abstract_db.nodes \
+                                            if node.name == "ABSTRACT_BMS"),
+                                         None)
 
         for dev in self.devices:
             match dev.kind:
                 case DeviceType.MPPT:
+                    assert abstract_mppt is not None
                     node_name = f"MPPT_{hex(dev.base_address)}"
+                    abstract_mppt_messages = [msg for msg in abstract_db.messages \
+                                              if msg.senders[0] == "ABSTRACT_MPPT"]
                     specifics = abstract_mppt.dbc
-                    real_nodes.append(cantools.database.Node(node_name, dbc_specifics=specifics))
-                    abstract_mppt_messages = [msg for msg in abstract_db.messages if msg.senders[0] == "ABSTRACT_MPPT"]
-
-                    for msg in abstract_mppt_messages:
-                        real_msg = deepcopy(msg)
-                        real_msg.frame_id = dev.base_address + msg.frame_id
-                        real_msg._senders = [node_name]
-                        real_messages.append(real_msg)
-
+                case DeviceType.MOTOR_CONTROLLER:
+                    assert abstract_motor_controller is not None
+                    node_name = f"MOTOR_CONTROLLER_{hex(dev.base_address)}"
+                    abstract_mppt_messages = [msg for msg in abstract_db.messages \
+                                              if msg.senders[0] == "ABSTRACT_MOTOR_CONTROLLER"]
+                    specifics = abstract_motor_controller.dbc
                 case _:
                     raise Exception(f"Unknown device type: {dev.kind}")
+
+            real_nodes.append(cantools.database.Node(node_name, dbc_specifics=specifics))
+            for msg in abstract_mppt_messages:
+                real_msg = deepcopy(msg)
+                real_msg.frame_id = dev.base_address + msg.frame_id
+                real_msg._senders = [node_name]
+                real_messages.append(real_msg)
+
         return cantools.database.Database(messages=real_messages, nodes=real_nodes)
 
 
 
 if __name__ == "__main__":
-    adbc = AbstractDbc(Path(PROJECT_ROOT).joinpath("src", "cantools-test", "abstract.dbc"), [Device(DeviceType.MPPT, 0x600), Device(DeviceType.MPPT, 0x610)])
+    adbc = AbstractDbc(Path(PROJECT_ROOT).joinpath("src", "cantools-test", "abstract_mppt.dbc"),
+                       [Device(DeviceType.MPPT, 0x600), Device(DeviceType.MPPT, 0x610)])
     db = adbc.create_real_dbc()
-    cantools.database.dump_file(db, Path(PROJECT_ROOT).joinpath("src", "cantools-test", "out.dbc"))
+    cantools.database.dump_file(db, Path(PROJECT_ROOT).joinpath("src", "cantools-test", "mppt.dbc"))
+
+    adbc = AbstractDbc(Path(PROJECT_ROOT).joinpath("src", "cantools-test", "abstract_motor_controller.dbc"),
+                       [Device(DeviceType.MOTOR_CONTROLLER, 0x400)])
+    db = adbc.create_real_dbc()
+    cantools.database.dump_file(db, Path(PROJECT_ROOT).joinpath("src", "cantools-test", "motor_controller.dbc"))
 
