@@ -1,8 +1,6 @@
-from typing import cast, Optional
+from typing import cast
 from time import sleep
 from threading import Thread, Lock
-from queue import Queue # threadsafe mpmc queue used to emulate data transfer over XBee
-import sqlite3
 from pathlib import Path
 from copy import deepcopy
 
@@ -10,19 +8,27 @@ import can
 import cantools.database
 from cantools.database.can.database import Database
 from cantools.typechecking import SignalDictType
-from fastapi import FastAPI
+from digi.xbee.devices import XBeeDevice
 
 from definitions import PROJECT_ROOT
 from src.can.row import Row
 from src.can.stats import mock_value
 from src.can.util import add_dbc_file
-import src.sql
 
 VIRTUAL_BUS_NAME = "virtbus"
 
+PORT = "/dev/tty.usbserial-A21SPPJ6"
+BAUD_RATE = 57600
+REMOTE_NODE_ID = "Router"
+
+xbee = XBeeDevice(PORT, BAUD_RATE)
+xbee.open()
+
+remote = xbee.get_network().discover_device(REMOTE_NODE_ID)
+assert remote is not None
+
 # Thread communication globals
 row_lock = Lock()
-queue: Queue[str] = Queue()
 
 # The database used for parsing with cantools
 db = cast(Database, cantools.database.load_file(Path(PROJECT_ROOT).joinpath("src", "resources", "mppt.dbc")))
@@ -30,9 +36,6 @@ add_dbc_file(db, Path(PROJECT_ROOT).joinpath("src", "resources", "motor_controll
 
 # The rows that will be added to the database
 rows = [Row(db, node.name) for node in db.nodes]
-
-# Spin up API
-app = FastAPI()
 
 def device_worker(bus: can.ThreadSafeBus, my_messages:  list[cantools.database.Message]) -> None:
     """
@@ -72,36 +75,9 @@ def sender_worker():
             copied = deepcopy(rows)
         for row in copied:
             row.stamp()
-            queue.put(row.serialize())
-
-@app.get("/latest")
-async def get_latest(dev_name: str) -> Optional[Row]:
-    with row_lock:
-        return next((row for row in rows if row.name == dev_name), None)
+            xbee.send_data(remote, row.serialize())
 
 if __name__ == "__main__":
-    # This program simulates CAN bus traffic, onboard CAN frame parsing, and XBee data
-    # transfer via multiple threads.
-    #
-    # Virtual CAN bus traffic is simulated by sending random data (which is loosely based
-    # on previously collected real data) on a virtual bus. Each node on the CAN bus
-    # (e.g. an MPPT at base address 0x600, an MPPT at 0x610, a BMS, ...) is given its
-    # own thread to send messages on the bus. These are the device threads.
-    #
-    # This traffic is monitored and parsed in the accumulator thread,
-    # which maintains a row to be sent periodically to the base station for each
-    # device. This thread also averages values where appropritate.
-    #
-    # A sender thread is responsible for periodically reading from these
-    # assembled rows, timestamping them, and serializing them into a queue that
-    # will be read by the mock receiver thread (the main thread).
-    #
-    # Upon reception, the main thread deserializes the row and inserts it into a
-    # database table.
-
-    # Create a thread for each node in the database file. 
-    # Each thread gets a copy of the bus for writing.
-    # Each thread sends only the messages that the corresponding device would send.
     dev_threads: list[Thread] = []
     for i, node in enumerate(db.nodes):
         dev_threads.append(Thread(target=device_worker,
@@ -124,16 +100,4 @@ if __name__ == "__main__":
     accumulator.start()
     sender.start()
 
-    # Use the main thread to deserialize rows and update the databse
-    # as if it were running on the base station
-    conn   = sqlite3.connect(Path(PROJECT_ROOT).joinpath("src", "resources", "virt.db"))
-    cursor = conn.cursor()
-
-    for row in rows:
-        src.sql.create_table(row, cursor)
-    conn.commit()
-
-    while True:
-        r = Row.deserialize(queue.get())
-        src.sql.insert_row(r, cursor)
-        conn.commit()
+    sender.join()
