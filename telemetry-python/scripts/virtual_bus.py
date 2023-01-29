@@ -15,6 +15,7 @@ from definitions import PROJECT_ROOT
 from src.can.row import Row
 from src.can.stats import mock_value
 from src.can.util import add_dbc_file
+import src.sql
 
 VIRTUAL_BUS_NAME = "virtbus"
 
@@ -46,7 +47,7 @@ def device_worker(bus: can.ThreadSafeBus, my_messages:  list[cantools.database.M
 
 def row_accumulator_worker(bus: can.ThreadSafeBus):
     """
-    Observes messages sent on the `bus` and accumulates them in a global row
+    Observes messages sent on the `bus` and accumulates them in a global row.
     """
     while True:
         msg = bus.recv()
@@ -56,11 +57,11 @@ def row_accumulator_worker(bus: can.ThreadSafeBus):
         decoded = cast(SignalDictType, db.decode_message(msg.arbitration_id, msg.data))
         with row_lock:
             for k, v in decoded.items():
-                rows[i].signals[cast(str, k)].update(v)
+                rows[i].signals[k].update(v)
 
 def sender_worker():
     """
-    Serializes rows into the queue
+    Serializes rows into the queue.
     """
     while True:
         sleep(2.0)
@@ -122,10 +123,10 @@ if __name__ == "__main__":
     cursor = conn.cursor()
 
     for row in rows:
-        row.sql_create_table(cursor)
+        src.sql.create_table(row, cursor)
     conn.commit()
 
     while True:
         r = Row.deserialize(queue.get())
-        r.sql_insert_row(cursor)
+        src.sql.insert_row(r, cursor)
         conn.commit()

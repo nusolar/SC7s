@@ -9,7 +9,7 @@ from cantools.typechecking import SignalDictType
 from definitions import PROJECT_ROOT
 
 if __name__ == "__main__":
-    # Load in the CAN database file
+    # Load in the CAN database file(s)
     db = cast(Database, cantools.database.load_file(Path(PROJECT_ROOT).joinpath("src", "resources", "mppt.dbc")))
 
     with can.ThreadSafeBus(channel='can0', bustype='socketcan') as bus:

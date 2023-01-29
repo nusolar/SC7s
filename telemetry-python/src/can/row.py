@@ -2,7 +2,6 @@ from __future__ import annotations
 from typing import Optional
 from datetime import datetime
 import json
-from sqlite3.dbapi2 import Cursor
 
 from cantools.database.can.database import Database
 import can.message
@@ -12,7 +11,7 @@ class CanValue:
     CAN value object, which manages the common occurence of getting multiple
     values for a specific CAN tag before wanting to send it, through simple averaging.
     """
-    def __init__(self, value: Optional[float] = None, is_averaged = True) -> None:
+    def __init__(self: CanValue, value: Optional[float] = None, is_averaged = True) -> None:
         self.value: Optional[int | float] = value
         self.is_averaged = is_averaged
         if value is None:
@@ -20,7 +19,7 @@ class CanValue:
         else:
             self.n = 1
 
-    def fetch(self) -> Optional[int | float]:
+    def fetch(self: CanValue) -> Optional[int | float]:
         if not self.is_averaged:
             return self.value
         else:
@@ -29,7 +28,7 @@ class CanValue:
             self.value = None
             return save
 
-    def update(self, value):
+    def update(self: CanValue, value):
         if not self.is_averaged:
             self.value = value
         else:
@@ -75,16 +74,3 @@ class Row:
         d = json.loads(s)
         signals = {k: CanValue(v) for k, v in d["signals"].items()}
         return Row(signals, d["name"], timestamp=d["timestamp"])
-
-    def sql_create_table(self, cursor: Cursor) -> None:
-        columns = "(timestamp REAL,\n" \
-                  + ",\n".join(f"{k} {'REAL' if v.is_averaged else 'INT'}" for k, v in self.signals.items()) \
-                  + ")"
-        cursor.execute(
-            f"CREATE TABLE IF NOT EXISTS {self.name}\n" + columns
-        )
-
-    def sql_insert_row(self, cursor: Cursor) -> None:
-        qmarks = f"(?, " + ", ".join("?" for _ in self.signals.values()) + ")"
-        vals = [self.timestamp] + [v.value for v in self.signals.values()]
-        cursor.execute(f"INSERT INTO {self.name} VALUES\n" + qmarks, vals)
