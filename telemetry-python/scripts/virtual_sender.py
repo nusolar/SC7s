@@ -10,14 +10,14 @@ from cantools.database.can.database import Database
 from cantools.typechecking import SignalDictType
 from digi.xbee.devices import XBeeDevice
 
-from definitions import PROJECT_ROOT
+from definitions import PROJECT_ROOT, BUFFERED_XBEE_MSG_END
 from src.can.row import Row
 from src.can.stats import mock_value
 from src.can.util import add_dbc_file
 
 VIRTUAL_BUS_NAME = "virtbus"
 
-PORT = "/dev/tty.usbserial-A21SPPJ6"
+PORT = "/dev/ttyUSB0"
 BAUD_RATE = 57600
 REMOTE_NODE_ID = "Router"
 
@@ -65,6 +65,10 @@ def row_accumulator_worker(bus: can.ThreadSafeBus):
             for k, v in decoded.items():
                 rows[i].signals[k].update(v)
 
+def buffered_payload(payload: str, chunk_size: int = 256, terminator: str = BUFFERED_XBEE_MSG_END) -> list[str]:
+        payload += terminator
+        return [payload[i:i + chunk_size] for i in range(0, len(payload), chunk_size)]
+
 def sender_worker():
     """
     Serializes rows into the queue.
@@ -75,7 +79,10 @@ def sender_worker():
             copied = deepcopy(rows)
         for row in copied:
             row.stamp()
-            xbee.send_data(remote, row.serialize())
+            for chunk in buffered_payload(row.serialize()):
+                print(chunk)
+                print("\n")
+                xbee.send_data(remote, chunk)
 
 if __name__ == "__main__":
     dev_threads: list[Thread] = []
