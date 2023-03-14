@@ -12,7 +12,7 @@ from cantools.database.can.database import Database
 from cantools.typechecking import SignalDictType
 from fastapi import FastAPI
 
-from definitions import PROJECT_ROOT
+from src import ROOT_DIR
 from src.can.row import Row
 from src.can.stats import mock_value
 from src.util import add_dbc_file
@@ -25,8 +25,8 @@ row_lock = Lock()
 queue: Queue[str] = Queue()
 
 # The database used for parsing with cantools
-db = cast(Database, cantools.database.load_file(Path(PROJECT_ROOT).joinpath("src", "resources", "mppt.dbc")))
-add_dbc_file(db, Path(PROJECT_ROOT).joinpath("src", "resources", "motor_controller.dbc"))
+db = cast(Database, cantools.database.load_file(Path(ROOT_DIR).joinpath("resources", "mppt.dbc")))
+add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "motor_controller.dbc"))
 
 # The rows that will be added to the database
 rows = [Row(db, node.name) for node in db.nodes]
@@ -126,7 +126,7 @@ if __name__ == "__main__":
 
     # Use the main thread to deserialize rows and update the databse
     # as if it were running on the base station
-    conn   = sqlite3.connect(Path(PROJECT_ROOT).joinpath("src", "resources", "virt.db"))
+    conn   = sqlite3.connect(Path(ROOT_DIR).joinpath("resources", "virt.db"))
     cursor = conn.cursor()
 
     for row in rows:

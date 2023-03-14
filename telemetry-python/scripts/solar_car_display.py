@@ -7,7 +7,7 @@ import threading
 import can
 import cantools.database
 from pathlib import Path
-from definitions import PROJECT_ROOT
+from src import ROOT_DIR
 
 #import gps frame that's in same folder
 import gps_display
@@ -190,7 +190,7 @@ class HomeFrame(Frame):
 # Worker function to receive packets off CAN line and
 # update displayables
 def receiver_worker():
-    db = cantools.database.load_file(Path(PROJECT_ROOT).joinpath("cantools-test").joinpath("out.dbc"))
+    db = cantools.database.load_file(Path(ROOT_DIR).parent.joinpath("cantools-test").joinpath("out.dbc"))
 
     with can.interface.Bus(channel='can0', bustype='socketcan') as bus:  # type: ignore
         while True:

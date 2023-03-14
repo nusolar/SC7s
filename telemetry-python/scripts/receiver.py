@@ -7,14 +7,14 @@ from cantools.database.can.database import Database
 from digi.xbee.devices import XBeeDevice
 from digi.xbee.models.message import XBeeMessage
 
-from definitions import PROJECT_ROOT, BUFFERED_XBEE_MSG_END
+from src import ROOT_DIR, BUFFERED_XBEE_MSG_END
 from src.can.row import Row
 from src.util import add_dbc_file
 import src.sql
 
 # The database used for parsing with cantools
-db = cast(Database, cantools.database.load_file(Path(PROJECT_ROOT).joinpath("src", "resources", "mppt.dbc")))
-add_dbc_file(db, Path(PROJECT_ROOT).joinpath("src", "resources", "motor_controller.dbc"))
+db = cast(Database, cantools.database.load_file(Path(ROOT_DIR).joinpath("resources", "mppt.dbc")))
+add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "motor_controller.dbc"))
 
 PORT = "/dev/tty.usbserial-A21SPQED"
 BAUD_RATE = 57600
@@ -45,7 +45,7 @@ if __name__ == "__main__":
     # Use the main thread to deserialize rows and update the databse
     # as if it were running on the base station
 
-    conn   = sqlite3.connect(Path(PROJECT_ROOT).joinpath("src", "resources", "virt.db"), check_same_thread=False)
+    conn   = sqlite3.connect(Path(ROOT_DIR).joinpath("resources", "virt.db"), check_same_thread=False)
     cursor = conn.cursor()
 
     for row in rows:
