@@ -1,6 +1,10 @@
+from typing import Iterable, Callable, TypeVar
+
 from cantools.database.can.database import Database
 from cantools.typechecking import StringPathLike
 from cantools.database.can.formats import dbc
+
+_T = TypeVar("_T")
 
 def add_dbc_file(self: Database, filename: StringPathLike, encoding: str = 'cp1252') -> None:
     """
@@ -19,3 +23,6 @@ def add_dbc_file(self: Database, filename: StringPathLike, encoding: str = 'cp12
         self._version = database.version
         self._dbc = database.dbc
         self.refresh()
+
+def find(it: Iterable[_T], predicate: Callable[[_T], bool]) -> _T:
+    return next(x for x in it if predicate(x))

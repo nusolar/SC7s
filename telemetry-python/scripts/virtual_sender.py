@@ -13,7 +13,7 @@ from digi.xbee.devices import XBeeDevice
 from definitions import PROJECT_ROOT, BUFFERED_XBEE_MSG_END
 from src.can.row import Row
 from src.can.stats import mock_value
-from src.can.util import add_dbc_file
+from src.util import add_dbc_file
 
 VIRTUAL_BUS_NAME = "virtbus"
 

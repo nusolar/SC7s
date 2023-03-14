@@ -9,15 +9,15 @@ from digi.xbee.models.message import XBeeMessage
 
 from definitions import PROJECT_ROOT, BUFFERED_XBEE_MSG_END
 from src.can.row import Row
-from src.can.util import add_dbc_file
+from src.util import add_dbc_file
 import src.sql
 
 # The database used for parsing with cantools
 db = cast(Database, cantools.database.load_file(Path(PROJECT_ROOT).joinpath("src", "resources", "mppt.dbc")))
 add_dbc_file(db, Path(PROJECT_ROOT).joinpath("src", "resources", "motor_controller.dbc"))
 
-PORT = "/dev/tty.usbserial-A21SPPJ6"
-BAUD_RATE = 9600
+PORT = "/dev/tty.usbserial-A21SPQED"
+BAUD_RATE = 57600
 
 xbee = XBeeDevice(PORT, BAUD_RATE)
 xbee.open()
