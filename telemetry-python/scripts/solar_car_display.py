@@ -1,3 +1,4 @@
+from typing import cast
 from pathlib import Path
 import threading
 
@@ -6,9 +7,12 @@ from tkinter import ttk
 from tkinter import font as tkFont
 import can
 import cantools.database
+from cantools.database.can.database import Database
+from cantools.typechecking import SignalDictType
 
 from src import ROOT_DIR
 from src.can.virtual import start_virtual_can_bus
+from src.util import add_dbc_file
 
 VIRTUAL_BUS_NAME = "virtual"
 
@@ -193,14 +197,16 @@ class HomeFrame(Frame):
 # Worker function to receive packets off CAN line and
 # update displayables
 def receiver_worker():
-    db = cantools.database.load_file(Path(ROOT_DIR).parent.joinpath("cantools-test").joinpath("out.dbc"))
+    db = cast(Database, cantools.database.load_file(Path(ROOT_DIR).joinpath("resources", "mppt.dbc")))
+    add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "motor_controller.dbc"))
 
-    bus = can.ThreadSafeBus(VIRTUAL_BUS_NAME)
-    start_virtual_can_bus(bus, db)
+    start_virtual_can_bus(can.ThreadSafeBus(VIRTUAL_BUS_NAME, bustype="virtual"), db)
 
+    bus = can.ThreadSafeBus(VIRTUAL_BUS_NAME, bustype="virtual")
     while True:
         msg = bus.recv()
-        for k, v in db.decode_message(msg.arbitration_id, msg.data).items():
+        decoded = cast(SignalDictType, db.decode_message(msg.arbitration_id, msg.data))
+        for k, v in decoded.items():
             if k in displayables:
                 displayables[k] = v
 
