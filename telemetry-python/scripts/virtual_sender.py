@@ -18,8 +18,8 @@ from src.util import add_dbc_file
 VIRTUAL_BUS_NAME = "virtbus"
 
 PORT = "/dev/ttyUSB0"
-BAUD_RATE = 57600
-REMOTE_NODE_ID = "Router"
+BAUD_RATE = 9600
+REMOTE_NODE_ID = "Node"
 
 xbee = XBeeDevice(PORT, BAUD_RATE)
 xbee.open()
