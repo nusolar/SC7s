@@ -1,4 +1,4 @@
-from typing import cast, Optional
+from typing import cast
 from time import sleep
 from threading import Thread, Lock
 from queue import Queue # threadsafe mpmc queue used to emulate data transfer over XBee
@@ -10,12 +10,11 @@ import can
 import cantools.database
 from cantools.database.can.database import Database
 from cantools.typechecking import SignalDictType
-from fastapi import FastAPI
 
 from src import ROOT_DIR
 from src.can.row import Row
-from src.can.stats import mock_value
 from src.util import add_dbc_file
+from src.can.virtual import start_virtual_can_bus
 import src.sql
 
 VIRTUAL_BUS_NAME = "virtbus"
@@ -30,23 +29,6 @@ add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "motor_controller.dbc"))
 
 # The rows that will be added to the database
 rows = [Row(db, node.name) for node in db.nodes]
-
-# Spin up API
-app = FastAPI()
-
-def device_worker(bus: can.ThreadSafeBus, my_messages:  list[cantools.database.Message]) -> None:
-    """
-    Constantly sends messages on the `bus`.
-    """
-    while True:
-        for msg in my_messages:
-            d = {}
-            for sig in msg.signals:
-                d[sig.name] = mock_value(msg.senders[0], sig.name)
-            data = msg.encode(d)
-            bus.send(can.Message(arbitration_id=msg.frame_id, data=data))
-            sleep(0.1)
-        sleep(1)
 
 def row_accumulator_worker(bus: can.ThreadSafeBus):
     """
@@ -74,11 +56,6 @@ def sender_worker():
             row.stamp()
             queue.put(row.serialize())
 
-@app.get("/latest")
-async def get_latest(dev_name: str) -> Optional[Row]:
-    with row_lock:
-        return next((row for row in rows if row.name == dev_name), None)
-
 if __name__ == "__main__":
     # This program simulates CAN bus traffic, onboard CAN frame parsing, and XBee data
     # transfer via multiple threads.
@@ -99,15 +76,8 @@ if __name__ == "__main__":
     # Upon reception, the main thread deserializes the row and inserts it into a
     # database table.
 
-    # Create a thread for each node in the database file. 
-    # Each thread gets a copy of the bus for writing.
-    # Each thread sends only the messages that the corresponding device would send.
-    dev_threads: list[Thread] = []
-    for i, node in enumerate(db.nodes):
-        dev_threads.append(Thread(target=device_worker,
-                                  args=(can.ThreadSafeBus(VIRTUAL_BUS_NAME, bustype="virtual"),
-                                        [msg for msg in db.messages if msg.senders[0] == db.nodes[i].name]),
-                                  daemon=True))
+    # Start the virtual bus
+    start_virtual_can_bus(can.ThreadSafeBus(VIRTUAL_BUS_NAME, bustype="virtual"), db)
 
     # Create a thread to read of the bus and maintain the rows
     accumulator = Thread(target=row_accumulator_worker,
@@ -116,10 +86,6 @@ if __name__ == "__main__":
 
     # Create a thread to serialize rows as would be necessary with XBees
     sender = Thread(target=sender_worker, daemon=True)
-
-    # Start all the threads.
-    for thread in dev_threads:
-        thread.start()
 
     accumulator.start()
     sender.start()

@@ -12,7 +12,7 @@ from digi.xbee.devices import XBeeDevice
 
 from src import ROOT_DIR, BUFFERED_XBEE_MSG_END
 from src.can.row import Row
-from src.can.stats import mock_value
+from src.can.virtual import start_virtual_can_bus
 from src.util import add_dbc_file
 
 VIRTUAL_BUS_NAME = "virtbus"
@@ -36,20 +36,6 @@ add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "motor_controller.dbc"))
 
 # The rows that will be added to the database
 rows = [Row(db, node.name) for node in db.nodes]
-
-def device_worker(bus: can.ThreadSafeBus, my_messages:  list[cantools.database.Message]) -> None:
-    """
-    Constantly sends messages on the `bus`.
-    """
-    while True:
-        for msg in my_messages:
-            d = {}
-            for sig in msg.signals:
-                d[sig.name] = mock_value(msg.senders[0], sig.name)
-            data = msg.encode(d)
-            bus.send(can.Message(arbitration_id=msg.frame_id, data=data))
-            sleep(0.1)
-        sleep(1)
 
 def row_accumulator_worker(bus: can.ThreadSafeBus):
     """
@@ -85,12 +71,8 @@ def sender_worker():
                 xbee.send_data(remote, chunk)
 
 if __name__ == "__main__":
-    dev_threads: list[Thread] = []
-    for i, node in enumerate(db.nodes):
-        dev_threads.append(Thread(target=device_worker,
-                                  args=(can.ThreadSafeBus(VIRTUAL_BUS_NAME, bustype="virtual"),
-                                        [msg for msg in db.messages if msg.senders[0] == db.nodes[i].name]),
-                                  daemon=True))
+    # Start the virtual bus
+    start_virtual_can_bus(can.ThreadSafeBus(VIRTUAL_BUS_NAME, bustype="virtual"), db)
 
     # Create a thread to read of the bus and maintain the rows
     accumulator = Thread(target=row_accumulator_worker,
@@ -99,10 +81,6 @@ if __name__ == "__main__":
 
     # Create a thread to serialize rows as would be necessary with XBees
     sender = Thread(target=sender_worker, daemon=True)
-
-    # Start all the threads.
-    for thread in dev_threads:
-        thread.start()
 
     accumulator.start()
     sender.start()

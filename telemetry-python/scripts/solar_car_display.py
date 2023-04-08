@@ -1,13 +1,16 @@
-#imports
-#import tkinter as tk
+from pathlib import Path
+import threading
+
 from tkinter import *
 from tkinter import ttk
 from tkinter import font as tkFont
-import threading
 import can
 import cantools.database
-from pathlib import Path
+
 from src import ROOT_DIR
+from src.can.virtual import start_virtual_can_bus
+
+VIRTUAL_BUS_NAME = "virtual"
 
 #import gps frame that's in same folder
 import gps_display
@@ -192,12 +195,14 @@ class HomeFrame(Frame):
 def receiver_worker():
     db = cantools.database.load_file(Path(ROOT_DIR).parent.joinpath("cantools-test").joinpath("out.dbc"))
 
-    with can.interface.Bus(channel='can0', bustype='socketcan') as bus:  # type: ignore
-        while True:
-            msg = bus.recv()
-            for k, v in db.decode_message(msg.arbitration_id, msg.data).items():
-                if k in displayables:
-                    displayables[k] = v
+    bus = can.ThreadSafeBus(VIRTUAL_BUS_NAME)
+    start_virtual_can_bus(bus, db)
+
+    while True:
+        msg = bus.recv()
+        for k, v in db.decode_message(msg.arbitration_id, msg.data).items():
+            if k in displayables:
+                displayables[k] = v
 
 
 
