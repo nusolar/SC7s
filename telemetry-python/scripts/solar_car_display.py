@@ -1,4 +1,4 @@
-from typing import cast
+from typing import cast, Literal
 from pathlib import Path
 import threading
 
@@ -9,12 +9,18 @@ import can
 import cantools.database
 from cantools.database.can.database import Database
 from cantools.typechecking import SignalDictType
+import serial
 
 from src import ROOT_DIR
 from src.can.virtual import start_virtual_can_bus
 from src.util import add_dbc_file
 
 VIRTUAL_BUS_NAME = "virtual"
+
+CAN_INTERFACE: Literal["virtual"] | Literal["canusb"] | Literal["pican"] = "virtual"
+SERIAL_PORT = "/dev/ttyUSB0"
+SERIAL_BAUD_RATE = 500000
+
 
 #import gps frame that's in same folder
 import gps_display
@@ -200,15 +206,34 @@ def receiver_worker():
     db = cast(Database, cantools.database.load_file(Path(ROOT_DIR).joinpath("resources", "mppt.dbc")))
     add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "motor_controller.dbc"))
 
-    start_virtual_can_bus(can.ThreadSafeBus(VIRTUAL_BUS_NAME, bustype="virtual"), db)
+    bustype = "virtual" if CAN_INTERFACE == "virtual" else "socketcan"
+    channel = VIRTUAL_BUS_NAME if CAN_INTERFACE == "virtual" else "can0"
+    if CAN_INTERFACE == "virtual":
+        start_virtual_can_bus(can.ThreadSafeBus(channel=channel, bustype=bustype), db)
 
-    bus = can.ThreadSafeBus(VIRTUAL_BUS_NAME, bustype="virtual")
-    while True:
-        msg = bus.recv()
-        decoded = cast(SignalDictType, db.decode_message(msg.arbitration_id, msg.data))
-        for k, v in decoded.items():
-            if k in displayables:
-                displayables[k] = v
+    if CAN_INTERFACE == "virtual" or CAN_INTERFACE == "can0":
+        bus = can.ThreadSafeBus(channel=channel, bustype=bustype)
+        while True:
+            msg = bus.recv()
+            decoded = cast(SignalDictType, db.decode_message(msg.arbitration_id, msg.data))
+            for k, v in decoded.items():
+                if k in displayables:
+                    displayables[k] = v
+    else:
+        while(True):
+            with serial.Serial(SERIAL_PORT, SERIAL_BAUD_RATE) as receiver:
+                raw = receiver.read_until(b';').decode()
+                if len(raw) != 23: continue
+                raw = raw[1:len(raw) - 1]
+                raw = raw.replace('S', '')
+                raw = raw.replace('N', '')
+                tag = int(raw[0:3], 16)
+                data = bytearray.fromhex(raw[3:])
+                msg = can.Message(arbitration_id=tag, data=data)
+                decoded = cast(SignalDictType, db.decode_message(msg.arbitration_id, msg.data))
+                for k, v in decoded.items():
+                    if k in displayables:
+                        displayables[k] = v
 
 
 
