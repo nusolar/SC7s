@@ -74,7 +74,7 @@ if __name__ == "__main__":
     cantools.database.dump_file(db, Path(ROOT_DIR).joinpath("resources", "mppt.dbc"))
 
     adbc = AbstractDbc(Path(ROOT_DIR).joinpath("resources", "abstract_motor_controller.dbc"),
-                       [Device(DeviceType.MOTOR_CONTROLLER, 0x400)])
+                       [Device(DeviceType.MOTOR_CONTROLLER, 0x400), Device(DeviceType.MOTOR_CONTROLLER, 0x500)])
     db = adbc.create_real_dbc()
     cantools.database.dump_file(db, Path(ROOT_DIR).joinpath("resources", "motor_controller.dbc"))
 
