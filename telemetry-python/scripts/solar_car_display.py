@@ -29,6 +29,7 @@ WIDTH = 500
 HEIGHT = 300
 BCK_COLOR = "#381b4d" #dark purple
 FG_COLOR = "#ebebeb" #silver
+CANUSB_PORT = '/dev/ttyUSB0'
 
 # CAN names to their values, global because it is accessed by multiple
 # threads. Initialized with the names for the values we choose to display.

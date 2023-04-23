@@ -15,7 +15,7 @@
 from digi.xbee.devices import XBeeDevice
 
 # TODO: Replace with the serial port where your local module is connected to.
-PORT = "/dev/tty.usbserial-A21SPPJ6"
+PORT = "COM9"
 # TODO: Replace with the baud rate of your local module.
 BAUD_RATE = 9600
 
