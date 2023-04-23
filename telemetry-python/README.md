@@ -63,7 +63,9 @@ Once in a virtual environment, you can run
 ```bash
 $ make install
 ```
-to install all the required packages. **DO NOT** use `pip install -r`. The `Makefile`
+to install all the required packages.
+
+**DO NOT** use `pip install -r`. The `Makefile`
 provides a wrapper around this to ensure that our code is also installed as
 an editable package.
 
@@ -76,5 +78,6 @@ $ make freeze > requirements.txt
 
 **DO NOT** use `pip freeze`. The `Makefile` provides a wrapper around this
 to ensure that our editable package is handled correctly.
+
 **DO NOT** run `make freeze` if you are not in a virtual environment.
 This will end up polluting `requirements.txt` with unneeded packages.

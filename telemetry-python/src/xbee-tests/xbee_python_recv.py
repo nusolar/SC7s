@@ -29,6 +29,7 @@ def main():
 
     try:
         device.open()
+        print("opened")
 
         def data_receive_callback(xbee_message):
             # json_row = json.loads(xbee_message.data)

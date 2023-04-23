@@ -12,6 +12,7 @@ from digi.xbee.devices import XBeeDevice
 
 from src import ROOT_DIR, BUFFERED_XBEE_MSG_END
 from src.can.row import Row
+from src.can.virtual import start_virtual_can_bus
 from src.util import add_dbc_file
 
 VIRTUAL_BUS_NAME = "virtbus"
@@ -71,9 +72,11 @@ def sender_worker():
 
 if __name__ == "__main__":
     # Start the virtual bus
+    start_virtual_can_bus(can.ThreadSafeBus(VIRTUAL_BUS_NAME, bustype="virtual"), db)
+
     # Create a thread to read of the bus and maintain the rows
     accumulator = Thread(target=row_accumulator_worker,
-                         args=(can.ThreadSafeBus(channel='can0', bustype='socketcan'),),
+                         args=(can.ThreadSafeBus(VIRTUAL_BUS_NAME, bustype='virtual'),),
                          daemon=True)
 
     # Create a thread to serialize rows as would be necessary with XBees

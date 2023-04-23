@@ -1,11 +1,26 @@
-#imports
-#import tkinter as tk
+from typing import cast, Literal
+from pathlib import Path
+import threading
+
 from tkinter import *
 from tkinter import ttk
 from tkinter import font as tkFont
-import threading
-from receiver import Receiver
-import time
+import can
+import cantools.database
+from cantools.database.can.database import Database
+from cantools.typechecking import SignalDictType
+import serial
+
+from src import ROOT_DIR
+from src.can.virtual import start_virtual_can_bus
+from src.util import add_dbc_file
+
+VIRTUAL_BUS_NAME = "virtual"
+
+CAN_INTERFACE: Literal["virtual"] | Literal["canusb"] | Literal["pican"] = "virtual"
+SERIAL_PORT = "/dev/ttyUSB0"
+SERIAL_BAUD_RATE = 500000
+
 
 #import gps frame that's in same folder
 import gps_display
@@ -19,7 +34,7 @@ CANUSB_PORT = '/dev/ttyUSB0'
 # CAN names to their values, global because it is accessed by multiple
 # threads. Initialized with the names for the values we choose to display.
 # For now these are dummy values.
-displayables = {"VVEL": 0.0, "15VS": 0.0, "EFLA": 0}
+displayables = {"Output_voltage": 0.0, "Output_current": 0.0, "Controller_temperature": 0}
 
 class CarDisplay(Tk):
     def __init__(self, *args, **kwargs):
@@ -180,22 +195,46 @@ class HomeFrame(Frame):
 
 
     def updater(self):
-        self.speed.set(round(displayables['VVEL'], 3))
-        self.voltage.set(round(displayables['15VS'], 3))
-        if displayables['EFLA'] != 0:
-            self.errors.set('Active errors!')
-        else:
-            self.errors.set('No active errors')
+        self.speed.set(round(displayables["Output_current"], 3))
+        self.voltage.set(round(displayables["Output_current"], 3))
+        self.errors.set(round(displayables["Controller_temperature"], 3))
         self.after(1000, self.updater)
 
 
 # Worker function to receive packets off CAN line and
 # update displayables
 def receiver_worker():
-    r = Receiver(serial_port=CANUSB_PORT)
-    for item in r.get_packets():
-        if item['Tag'] in displayables:
-            displayables[item['Tag']] = item['data']
+    db = cast(Database, cantools.database.load_file(Path(ROOT_DIR).joinpath("resources", "mppt.dbc")))
+    add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "motor_controller.dbc"))
+
+    bustype = "virtual" if CAN_INTERFACE == "virtual" else "socketcan"
+    channel = VIRTUAL_BUS_NAME if CAN_INTERFACE == "virtual" else "can0"
+    if CAN_INTERFACE == "virtual":
+        start_virtual_can_bus(can.ThreadSafeBus(channel=channel, bustype=bustype), db)
+
+    if CAN_INTERFACE == "virtual" or CAN_INTERFACE == "can0":
+        bus = can.ThreadSafeBus(channel=channel, bustype=bustype)
+        while True:
+            msg = bus.recv()
+            decoded = cast(SignalDictType, db.decode_message(msg.arbitration_id, msg.data))
+            for k, v in decoded.items():
+                if k in displayables:
+                    displayables[k] = v
+    else:
+        while(True):
+            with serial.Serial(SERIAL_PORT, SERIAL_BAUD_RATE) as receiver:
+                raw = receiver.read_until(b';').decode()
+                if len(raw) != 23: continue
+                raw = raw[1:len(raw) - 1]
+                raw = raw.replace('S', '')
+                raw = raw.replace('N', '')
+                tag = int(raw[0:3], 16)
+                data = bytearray.fromhex(raw[3:])
+                msg = can.Message(arbitration_id=tag, data=data)
+                decoded = cast(SignalDictType, db.decode_message(msg.arbitration_id, msg.data))
+                for k, v in decoded.items():
+                    if k in displayables:
+                        displayables[k] = v
 
 
 
