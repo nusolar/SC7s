@@ -92,7 +92,7 @@ if __name__ == "__main__":
 
     # Use the main thread to deserialize rows and update the databse
     # as if it were running on the base station
-    conn   = sqlite3.connect(Path(ROOT_DIR).joinpath("resources", "virt.db"))
+    conn   = sqlite3.connect(Path(ROOT_DIR).joinpath("resources", "telemetry.db"))
     cursor = conn.cursor()
 
     for row in rows:
