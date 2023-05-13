@@ -8,13 +8,13 @@ import pkg_resources, os
 
 GET_ALL_DATA = "SELECT * FROM can_test_db;"
 
-def connect():
+def connect(filename="TEST"):
     # open data file. if not there, create one
     # os and pathlib are used to create the db file in the same location every
     # time.
     db_file = pkg_resources.resource_filename(
         __name__,
-        os.path.join(os.pardir, 'resources', 'TEST.db'))
+        os.path.join(os.pardir, 'resources', f"{filename}.db"))
     return sqlite3.connect(db_file, 
                            isolation_level=None, 
                            check_same_thread=False)
