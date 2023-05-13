@@ -36,14 +36,35 @@ add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "motor_controller.dbc"))
 # The rows that will be added to the database
 rows = [Row(db, node.name) for node in db.nodes]
 
+def get_packets(interface) -> iter:
+    """Generates CAN Packets."""
+    if interface == 'canusb':
+        with serial.Serial(SERIAL_PORT, SERIAL_BAUD_RATE) as receiver:
+            while(True):
+                raw = receiver.read_until(b';').decode()
+                if len(raw) != 23: continue
+                raw = raw[1:len(raw) - 1]
+                raw = raw.replace('S', '')
+                raw = raw.replace('N', '')
+                tag = int(raw[0:3], 16)
+                data = bytearray.fromhex(raw[3:])
+                sleep(.1)
+                yield can.Message(arbitration_id=tag, data=data)
+    elif interface == 'pican':
+        with can.interface.Bus(channel='can0', bustype='socketcan') as bus:
+            for msg in bus:
+                tag = msg.arbitration_id
+                data = msg.data
+                yield can.Message(arbitration_id=tag, data=data)
+    else:
+        raise Exception('Invalid interface')
+
 def row_accumulator_worker(bus: can.ThreadSafeBus):
     """
     Observes messages sent on the `bus` and accumulates them in a global row.
     """
-    while True:
-        msg = bus.recv()
+    for msg in get_packets("pican"):
         assert msg is not None
-        
         i = next(i for i, r in enumerate(rows) if r.owns(msg, db))
         decoded = cast(SignalDictType, db.decode_message(msg.arbitration_id, msg.data))
         with row_lock:
@@ -65,8 +86,7 @@ def sender_worker():
         for row in copied:
             row.stamp()
             for chunk in buffered_payload(row.serialize()):
-                print(chunk)
-                print("\n")
+                print(chunk, "\n")
                 xbee.send_data(remote, chunk)
 
 if __name__ == "__main__":
