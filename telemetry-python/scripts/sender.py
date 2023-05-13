@@ -94,7 +94,7 @@ def sender_worker():
         for row in copied:
             row.stamp()
             if store_data:
-                can_db.add_row(conn, r.timestamp, r.signals.values(), r.name)
+                can_db.add_row(conn, row.timestamp, row.signals.values(), row.name)
             for chunk in buffered_payload(row.serialize()):
                 print(chunk, "\n")
                 xbee.send_data(remote, chunk)
