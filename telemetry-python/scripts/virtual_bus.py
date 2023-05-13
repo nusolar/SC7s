@@ -13,7 +13,7 @@ from cantools.typechecking import SignalDictType
 
 from src import ROOT_DIR
 from src.can.row import Row
-from src.util import add_dbc_file
+from src.util import add_dbc_file, find
 from src.can.virtual import start_virtual_can_bus
 import src.sql
 
@@ -38,11 +38,12 @@ def row_accumulator_worker(bus: can.ThreadSafeBus):
         msg = bus.recv()
         assert msg is not None
         
-        i = next(i for i, r in enumerate(rows) if r.owns(msg, db))
+        row = find(rows, lambda r: r.owns(msg, db))
         decoded = cast(SignalDictType, db.decode_message(msg.arbitration_id, msg.data))
+
         with row_lock:
             for k, v in decoded.items():
-                rows[i].signals[k].update(v)
+                row.signals[k].update(v)
 
 def sender_worker():
     """
