@@ -10,7 +10,7 @@ from digi.xbee.models.message import XBeeMessage
 from src import ROOT_DIR, BUFFERED_XBEE_MSG_END
 from src.can.row import Row
 from src.util import add_dbc_file
-import src.sql
+import src.can_db as can_db
 
 # The database used for parsing with cantools
 db = cast(Database, cantools.database.load_file(Path(ROOT_DIR).joinpath("resources", "mppt.dbc")))
@@ -21,6 +21,9 @@ BAUD_RATE = 57600
 
 xbee = XBeeDevice(PORT, BAUD_RATE)
 xbee.open()
+
+# Connection
+conn = can_db.connect()
 
 # The rows that will be added to the database
 rows = [Row(db, node.name) for node in db.nodes]
@@ -35,8 +38,7 @@ def process_message(message: XBeeMessage) -> None:
         s = "".join(received) + s[:len(s) - len(BUFFERED_XBEE_MSG_END)]
         received.clear()
         r = Row.deserialize(s)
-        src.sql.insert_row(r, cursor)
-        conn.commit()
+        can_db.add_row(conn, r.timestamp, r.signals.values(), r.name)
     else:
         received.append(s)
 
@@ -45,12 +47,8 @@ if __name__ == "__main__":
     # Use the main thread to deserialize rows and update the databse
     # as if it were running on the base station
 
-    conn   = sqlite3.connect(Path(ROOT_DIR).joinpath("resources", "virt.db"), check_same_thread=False)
-    cursor = conn.cursor()
-
     for row in rows:
-        src.sql.create_table(row, cursor)
-    conn.commit()
+        can_db.create_tables(conn, row.name, row.signals.items())
     print("ready to receive")
 
     xbee.add_data_received_callback(process_message)
