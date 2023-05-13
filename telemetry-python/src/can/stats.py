@@ -4,6 +4,9 @@ UINT8_MAX = 0xFF
 
 # (mean, stddev) for different signals
 # Very loosely based on real data
+#
+# TODO: Get better data for more devices to base the virtual data
+# off of.
 MPIV_STATS   = (9.75, 0.1)
 MPIC_STATS   = (0.0005, 0.0001)
 MPOV_STATS   = (10.3, 0.1)
@@ -46,6 +49,8 @@ def inc_counter(node_name: str) -> int:
 
     return test_counters[node_name]
 
+# TODO: Add "playback mode", where `mock_value` pulls from real data recorded
+# previously.
 def mock_value(node_name: str, signal_name: str) -> float | int:
     """
     Make a mock value for a signal.
