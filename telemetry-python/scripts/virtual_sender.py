@@ -1,3 +1,6 @@
+# TODO: This file repeats a lot of the same code as `sender.py`.
+# Fix that.
+
 from typing import cast
 from time import sleep
 from threading import Thread, Lock
@@ -13,7 +16,7 @@ from digi.xbee.devices import XBeeDevice
 from src import ROOT_DIR, BUFFERED_XBEE_MSG_END
 from src.can.row import Row
 from src.can.virtual import start_virtual_can_bus
-from src.util import add_dbc_file
+from src.util import add_dbc_file, find, unwrap
 
 VIRTUAL_BUS_NAME = "virtbus"
 
@@ -45,12 +48,15 @@ def row_accumulator_worker(bus: can.ThreadSafeBus):
         msg = bus.recv()
         assert msg is not None
         
-        i = next(i for i, r in enumerate(rows) if r.owns(msg, db))
+        row = find(rows, lambda r: r.owns(msg, db))
+        row = unwrap(row)
+
         decoded = cast(SignalDictType, db.decode_message(msg.arbitration_id, msg.data))
         with row_lock:
             for k, v in decoded.items():
-                rows[i].signals[k].update(v)
+                row.signals[k].update(v)
 
+# TODO: Buffering sucks. Get rid of the need for this (with more space-efficient serialization).
 def buffered_payload(payload: str, chunk_size: int = 256, terminator: str = BUFFERED_XBEE_MSG_END) -> list[str]:
         payload += terminator
         return [payload[i:i + chunk_size] for i in range(0, len(payload), chunk_size)]
@@ -82,7 +88,9 @@ if __name__ == "__main__":
     # Create a thread to serialize rows as would be necessary with XBees
     sender = Thread(target=sender_worker, daemon=True)
 
+    # Start the threads
     accumulator.start()
     sender.start()
 
-    sender.join()
+    # Spin forever.
+    while True: ...
