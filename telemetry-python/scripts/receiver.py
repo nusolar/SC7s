@@ -23,7 +23,7 @@ xbee = XBeeDevice(PORT, BAUD_RATE)
 xbee.open()
 
 # Connection
-conn = can_db.connect()
+conn = can_db.connect("can_receiving_db")
 
 # The rows that will be added to the database
 rows = [Row(db, node.name) for node in db.nodes]
