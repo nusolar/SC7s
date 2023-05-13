@@ -14,11 +14,15 @@ from src import ROOT_DIR, BUFFERED_XBEE_MSG_END
 from src.can.row import Row
 from src.util import add_dbc_file
 
+import src.can_db as can_db
+
 VIRTUAL_BUS_NAME = "virtbus"
 
 PORT = "/dev/ttyUSB0"
 BAUD_RATE = 9600
 REMOTE_NODE_ID = "Node"
+
+store_data = False;
 
 xbee = XBeeDevice(PORT, BAUD_RATE)
 xbee.open()
@@ -32,6 +36,10 @@ row_lock = Lock()
 # The database used for parsing with cantools
 db = cast(Database, cantools.database.load_file(Path(ROOT_DIR).joinpath("resources", "mppt.dbc")))
 add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "motor_controller.dbc"))
+
+if store_data:
+    # Connection
+    conn = can_db.connect()
 
 # The rows that will be added to the database
 rows = [Row(db, node.name) for node in db.nodes]
@@ -85,11 +93,18 @@ def sender_worker():
             copied = deepcopy(rows)
         for row in copied:
             row.stamp()
+            if store_data:
+                can_db.add_row(conn, r.timestamp, r.signals.values(), r.name)
             for chunk in buffered_payload(row.serialize()):
                 print(chunk, "\n")
                 xbee.send_data(remote, chunk)
 
 if __name__ == "__main__":
+    if store_data:
+        for row in rows:
+            can_db.create_tables(conn, row.name, row.signals.items())
+        print("ready to receive")
+    
     # Start the virtual bus
     # Create a thread to read of the bus and maintain the rows
     accumulator = Thread(target=row_accumulator_worker,
