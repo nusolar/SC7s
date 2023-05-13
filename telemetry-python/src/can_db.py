@@ -3,6 +3,8 @@
 
 import sqlite3
 import pkg_resources, os
+from pathlib import Path
+from src import ROOT_DIR
 
 # Add queries separately so it's easier to change later on
 
@@ -12,9 +14,10 @@ def connect(filename="TEST"):
     # open data file. if not there, create one
     # os and pathlib are used to create the db file in the same location every
     # time.
-    db_file = pkg_resources.resource_filename(
-        __name__,
-        os.path.join(os.pardir, 'resources', f"{filename}.db"))
+    db_file = Path(ROOT_DIR).joinpath('resources', f"{filename}.db")
+    # db_file = pkg_resources.resource_filename(
+    #     __name__,
+    #     os.path.join(os.pardir, 'resources', f"{filename}.db"))
     return sqlite3.connect(db_file, 
                            isolation_level=None, 
                            check_same_thread=False)
