@@ -39,7 +39,7 @@ add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "motor_controller.dbc"))
 
 if store_data:
     # Connection
-    conn = can_db.connect()
+    conn = can_db.connect("can_sending_db")
 
 # The rows that will be added to the database
 rows = [Row(db, node.name) for node in db.nodes]
