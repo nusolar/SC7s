@@ -23,7 +23,7 @@ add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "motor_controller.dbc"))
 # The baud rate should be noted on the XBee device itself.
 #
 # TODO: Generalize this so it's not hard-coded.
-PORT = "/dev/tty.usbserial-A21SPQED"
+PORT = "COM8"
 BAUD_RATE = 57600
 
 # Setup the XBee.

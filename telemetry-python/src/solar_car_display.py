@@ -23,7 +23,7 @@ SERIAL_BAUD_RATE = 500000
 
 
 #import gps frame that's in same folder
-import gps_display
+# import gps_display
 
 WIDTH = 500
 HEIGHT = 300

@@ -17,6 +17,8 @@ from src.util import add_dbc_file, find, unwrap
 from src.can.virtual import start_virtual_can_bus
 import src.sql
 
+import src.solar_car_display as car_display
+
 VIRTUAL_BUS_NAME = "virtbus"
 
 # Thread communication globals
@@ -45,6 +47,8 @@ def row_accumulator_worker(bus: can.ThreadSafeBus):
         with row_lock:
             for k, v in decoded.items():
                 row.signals[k].update(v)
+                car_display.displayables[k] = v
+                print(car_display.displayables)
 
 def sender_worker():
     """
@@ -92,16 +96,22 @@ if __name__ == "__main__":
     accumulator.start()
     sender.start()
 
+    #display
+    root = car_display.CarDisplay()
+    root.mainloop()
+
+    while True: ...
+
     # Use the main thread to deserialize rows and update the databse
     # as if it were running on the base station
-    conn   = sqlite3.connect(Path(ROOT_DIR).joinpath("resources", "telemetry.db"))
-    cursor = conn.cursor()
+    # conn   = sqlite3.connect(Path(ROOT_DIR).joinpath("resources", "telemetry.db"))
+    # cursor = conn.cursor()
 
-    for row in rows:
-        src.sql.create_table(row, cursor)
-    conn.commit()
+    # for row in rows:
+    #     src.sql.create_table(row, cursor)
+    # conn.commit()
 
-    while True:
-        r = Row.deserialize(queue.get())
-        src.sql.insert_row(r, cursor)
-        conn.commit()
+    # while True:
+    #     r = Row.deserialize(queue.get())
+    #     src.sql.insert_row(r, cursor)
+    #     conn.commit()

@@ -14,6 +14,8 @@ from src import ROOT_DIR, BUFFERED_XBEE_MSG_END
 from src.can.row import Row
 from src.util import add_dbc_file, find, unwrap
 
+import src.solar_car_display as car_display
+
 VIRTUAL_BUS_NAME = "virtbus"
 
 PORT = "/dev/ttyUSB0"
@@ -51,6 +53,7 @@ def row_accumulator_worker(bus: can.ThreadSafeBus):
         with row_lock:
             for k, v in decoded.items():
                 row.signals[k].update(v)
+                car_display.displayables[k] = v
 
 # TODO: Buffering sucks. Get rid of the need for this (with more space-efficient serialization).
 def buffered_payload(payload: str, chunk_size: int = 256, terminator: str = BUFFERED_XBEE_MSG_END) -> list[str]:
@@ -81,6 +84,10 @@ if __name__ == "__main__":
 
     # Create a thread to serialize rows as would be necessary with XBees
     sender = Thread(target=sender_worker, daemon=True)
+
+    #display
+    root = car_display.CarDisplay()
+    root.mainloop()
 
     # Start the threads
     accumulator.start()
