@@ -34,6 +34,7 @@ row_lock = Lock()
 # The database used for parsing with cantools
 db = cast(Database, cantools.database.load_file(Path(ROOT_DIR).joinpath("resources", "mppt.dbc")))
 add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "motor_controller.dbc"))
+add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "bms.dbc"))
 
 # The rows that will be added to the database
 rows = [Row(db, node.name) for node in db.nodes]
@@ -53,7 +54,8 @@ def row_accumulator_worker(bus: can.ThreadSafeBus):
         with row_lock:
             for k, v in decoded.items():
                 row.signals[k].update(v)
-                car_display.displayables[k] = v
+                if k in car_display.displayables.keys():
+                    car_display.displayables[k] = v
 
 # TODO: Buffering sucks. Get rid of the need for this (with more space-efficient serialization).
 def buffered_payload(payload: str, chunk_size: int = 256, terminator: str = BUFFERED_XBEE_MSG_END) -> list[str]:
@@ -77,7 +79,7 @@ def sender_worker():
 
 #displays the car gui, receives can data, stores it, and sends it over the xbees
 if __name__ == "__main__":
-    # Start the virtual bus
+    # Start the bus
     # Create a thread to read of the bus and maintain the rows
     accumulator = Thread(target=row_accumulator_worker,
                          args=(can.ThreadSafeBus(channel='can0', bustype='socketcan'),),

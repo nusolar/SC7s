@@ -40,7 +40,7 @@ displayables = {"VehicleVelocity": 0.0,
                 "bbox_avgtemp": 0.0,
                 "bbox_maxtemp": 0.0,
                 "Output_current": 0.0,
-                "secondaryvolt": 0.0,
+                "bboxvolt": 0.0,
                 "regen_enabled": 0.0,
                 "Odometer": 0.0,
                 "vehicle_direction": 0.0,
@@ -106,7 +106,7 @@ class HomeFrame(Frame):
         self.bbox_avgtemp = StringVar(value= '0.0')
         self.bbox_maxtemp = StringVar(value= '0.0')
         self.mppt_current = StringVar(value= '0.0')
-        self.secondaryvolt = StringVar(value= '0.0')
+        self.bboxvolt = StringVar(value= '0.0')
         self.regen_enabled = StringVar(value= '0.0')
         self.odometer = StringVar(value= '0.0')
         self.vehicle_direction = StringVar(value= '0.0')
@@ -169,11 +169,11 @@ class HomeFrame(Frame):
         mppt_current_status.grid(column = 1, row = 3, sticky = E)
 
         #secondary voltage of battery box
-        secondaryvolt_label = ttk.Label(self.info_frame, text = "Secondary Voltage of Battery Box:", font = info_font)
-        secondaryvolt_label.grid(column = 0, row = 4, sticky = W)
+        bboxvolt_label = ttk.Label(self.info_frame, text = "Secondary Voltage of Battery Box:", font = info_font)
+        bboxvolt_label.grid(column = 0, row = 4, sticky = W)
 
-        secondaryvolt_status = ttk.Label(self.info_frame, textvariable = self.secondaryvolt, font = info_font)
-        secondaryvolt_status.grid(column = 1, row = 4, sticky = E)
+        bboxvolt_status = ttk.Label(self.info_frame, textvariable = self.bboxvolt, font = info_font)
+        bboxvolt_status.grid(column = 1, row = 4, sticky = E)
 
         #regen enabled?
         regen_enabled_label = ttk.Label(self.info_frame, text = "Regen Enable?", font = info_font)
@@ -235,11 +235,11 @@ class HomeFrame(Frame):
         self.bbox_avgtemp.set(round(displayables["bbox_avgtemp"], 3))
         self.bbox_maxtemp.set(round(displayables["bbox_maxtemp"], 3))
         self.mppt_current.set(str(round(displayables["Output_current"], 3)))
-        self.secondaryvolt.set(round(displayables["secondaryvolt"], 3))
+        self.bboxvolt.set(round(displayables["Maximum_Pack_Voltage"], 3))
         self.regen_enabled.set(round(displayables["regen_enabled"], 3))
         self.odometer.set(round(displayables["Odometer"], 3))
         self.vehicle_direction.set(round(displayables["vehicle_direction"], 3))
-        self.motorc_temp.set(round(displayables["Controller_temperature"], 3))
+        self.motorc_temp.set(round(displayables["MotorTemp"], 3))
 
         self.after(1000, self.updater)
 
