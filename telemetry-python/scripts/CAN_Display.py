@@ -14,7 +14,7 @@ from src import ROOT_DIR, BUFFERED_XBEE_MSG_END
 from src.can.row import Row
 from src.util import add_dbc_file, find, unwrap
 
-import src.solar_car_display as car_display
+import src.car_gui as car_display
 
 VIRTUAL_BUS_NAME = "virtbus"
 
@@ -75,6 +75,7 @@ def sender_worker():
                 print("\n")
                 xbee.send_data(remote, chunk)
 
+#displays the car gui, receives can data, stores it, and sends it over the xbees
 if __name__ == "__main__":
     # Start the virtual bus
     # Create a thread to read of the bus and maintain the rows

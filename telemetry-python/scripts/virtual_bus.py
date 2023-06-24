@@ -17,7 +17,7 @@ from src.util import add_dbc_file, find, unwrap
 from src.can.virtual import start_virtual_can_bus
 import src.sql
 
-import src.solar_car_display as car_display
+import src.car_gui as car_display
 
 VIRTUAL_BUS_NAME = "virtbus"
 
