@@ -15,7 +15,10 @@ from src import ROOT_DIR
 from src.can.row import Row
 from src.util import add_dbc_file, find, unwrap
 from src.can.virtual import start_virtual_can_bus
-import src.sql
+# import src.sql
+import src.can_db as can_db
+
+store_data = True;
 
 import src.car_gui as car_display
 
@@ -28,6 +31,11 @@ queue: Queue[str] = Queue()
 # The database used for parsing with cantools
 db = cast(Database, cantools.database.load_file(Path(ROOT_DIR).joinpath("resources", "mppt.dbc")))
 add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "motor_controller.dbc"))
+add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "bms_altered.dbc"))
+
+if store_data:
+    # Connection
+    conn = can_db.connect("vitrual_bus_db")
 
 # The rows that will be added to the database
 rows = [Row(db, node.name) for node in db.nodes]
@@ -60,6 +68,8 @@ def sender_worker():
             copied = deepcopy(rows)
         for row in copied:
             row.stamp()
+            if store_data:
+                can_db.add_row(conn, row.timestamp, row.signals.values(), row.name)
             queue.put(row.serialize())
 
 if __name__ == "__main__":
@@ -81,6 +91,11 @@ if __name__ == "__main__":
     #
     # Upon reception, the main thread deserializes the row and inserts it into a
     # database table.
+
+    if store_data:
+        for row in rows:
+            can_db.create_tables(conn, row.name, row.signals.items())
+        print("ready to receive")
 
     # Start the virtual bus
     start_virtual_can_bus(can.ThreadSafeBus(VIRTUAL_BUS_NAME, bustype="virtual"), db)

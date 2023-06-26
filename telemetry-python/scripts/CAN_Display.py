@@ -15,6 +15,9 @@ from src.can.row import Row
 from src.util import add_dbc_file, find, unwrap
 
 import src.car_gui as car_display
+import src.can_db as can_db
+
+store_data = True;
 
 VIRTUAL_BUS_NAME = "virtbus"
 
@@ -33,6 +36,10 @@ row_lock = Lock()
 db = cast(Database, cantools.database.load_file(Path(ROOT_DIR).joinpath("resources", "mppt.dbc")))
 add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "motor_controller.dbc"))
 add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "bms_altered.dbc"))
+
+if store_data:
+    # Connection
+    conn = can_db.connect("can_sending_db")
 
 # The rows that will be added to the database
 rows = [Row(db, node.name) for node in db.nodes]
@@ -70,6 +77,8 @@ def sender_worker():
             copied = deepcopy(rows)
         for row in copied:
             row.stamp()
+            if store_data:
+                can_db.add_row(conn, row.timestamp, row.signals.values(), row.name)
             for chunk in buffered_payload(row.serialize()):
                 print(chunk)
                 print("\n")
@@ -89,6 +98,10 @@ def startXbee():
 if __name__ == "__main__":
     if should_send:
         startXbee()
+    if store_data:
+        for row in rows:
+            can_db.create_tables(conn, row.name, row.signals.items())
+        print("ready to receive")
     # Start the bus
     # Create a thread to read of the bus and maintain the rows
     accumulator = Thread(target=row_accumulator_worker,
