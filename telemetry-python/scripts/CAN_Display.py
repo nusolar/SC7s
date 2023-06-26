@@ -22,11 +22,9 @@ PORT = "/dev/ttyUSB0"
 BAUD_RATE = 9600
 REMOTE_NODE_ID = "Node"
 
-xbee = XBeeDevice(PORT, BAUD_RATE)
-xbee.open()
-
-remote = xbee.get_network().discover_device(REMOTE_NODE_ID)
-assert remote is not None
+xbee = None
+remote = None
+should_send = False
 
 # Thread communication globals
 row_lock = Lock()
@@ -34,7 +32,7 @@ row_lock = Lock()
 # The database used for parsing with cantools
 db = cast(Database, cantools.database.load_file(Path(ROOT_DIR).joinpath("resources", "mppt.dbc")))
 add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "motor_controller.dbc"))
-add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "bms.dbc"))
+add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "bms_altered.dbc"))
 
 # The rows that will be added to the database
 rows = [Row(db, node.name) for node in db.nodes]
@@ -75,17 +73,29 @@ def sender_worker():
             for chunk in buffered_payload(row.serialize()):
                 print(chunk)
                 print("\n")
-                xbee.send_data(remote, chunk)
+                if should_send:
+                    xbee.send_data(remote, chunk)
+
+def startXbee():
+    global xbee, remote
+    xbee = XBeeDevice(PORT, BAUD_RATE)
+    xbee.open()
+
+    remote = xbee.get_network().discover_device(REMOTE_NODE_ID)
+    assert remote is not None
+
 
 #displays the car gui, receives can data, stores it, and sends it over the xbees
 if __name__ == "__main__":
+    if should_send:
+        startXbee()
     # Start the bus
     # Create a thread to read of the bus and maintain the rows
     accumulator = Thread(target=row_accumulator_worker,
                          args=(can.ThreadSafeBus(channel='can0', bustype='socketcan'),),
                          daemon=True)
 
-    # Create a thread to serialize rows as would be necessary with XBees
+    # # Create a thread to serialize rows as would be necessary with XBees
     sender = Thread(target=sender_worker, daemon=True)
 
     #display

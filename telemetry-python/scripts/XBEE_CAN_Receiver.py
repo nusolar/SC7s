@@ -15,7 +15,7 @@ import src.sql
 # The database used for parsing with cantools
 db = cast(Database, cantools.database.load_file(Path(ROOT_DIR).joinpath("resources", "mppt.dbc")))
 add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "motor_controller.dbc"))
-add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "bms.dbc"))
+add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "bms_altered.dbc"))
 
 # The port and baud rate of the connected XBee.
 #
