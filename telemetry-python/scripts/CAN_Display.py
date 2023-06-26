@@ -17,7 +17,7 @@ from src.util import add_dbc_file, find, unwrap
 import src.car_gui as car_display
 import src.can_db as can_db
 
-store_data = True;
+store_data = False;
 
 VIRTUAL_BUS_NAME = "virtbus"
 

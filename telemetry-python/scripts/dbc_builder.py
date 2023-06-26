@@ -103,13 +103,13 @@ if __name__ == "__main__":
 
     # Make a dbc file for all our MPPTs
     adbc = AbstractDbc(Path(ROOT_DIR).joinpath("resources", "abstract_mppt.dbc"),
-                       [Device(DeviceType.MPPT, 0x600), Device(DeviceType.MPPT, 0x610)])
+                       [Device(DeviceType.MPPT, 0x610), Device(DeviceType.MPPT, 0x620)])
     db = adbc.create_real_dbc()
     cantools.database.dump_file(db, Path(ROOT_DIR).joinpath("resources", "mppt.dbc"))
 
     # Make a dbc file for all our motor controllers
     adbc = AbstractDbc(Path(ROOT_DIR).joinpath("resources", "abstract_motor_controller.dbc"),
-                       [Device(DeviceType.MOTOR_CONTROLLER, 0x400), Device(DeviceType.MOTOR_CONTROLLER, 0x500)])
+                       [Device(DeviceType.MOTOR_CONTROLLER, 0x400), Device(DeviceType.MOTOR_CONTROLLER, 0x440)])
     db = adbc.create_real_dbc()
     cantools.database.dump_file(db, Path(ROOT_DIR).joinpath("resources", "motor_controller.dbc"))
 
