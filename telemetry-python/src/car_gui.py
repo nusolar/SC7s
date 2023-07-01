@@ -35,17 +35,17 @@ CANUSB_PORT = '/dev/ttyUSB0'
 # threads. Initialized with the names for the values we choose to display.
 # For now these are dummy values.
 # Displayables
-displayables_orig = {"VehicleVelocity": 0.0, 
-                "Pack_SOC": 0.0, 
-                "bbox_avgtemp": 0.0,
-                "bbox_maxtemp": 0.0,
-                "Output_current": 0.0,
-                "Avg_Opencell_Voltage": 0.0,
-                "regen_enabled": 0.0,
-                "Odometer": 0.0,
-                "vehicle_direction": 0.0,
-                "MotorTemp": 0.0
-}
+# displayables_orig = {"VehicleVelocity": 0.0, 
+#                 "Pack_SOC": 0.0, 
+#                 "bbox_avgtemp": 0.0,
+#                 "bbox_maxtemp": 0.0,
+#                 "Output_current": 0.0,
+#                 "Avg_Opencell_Voltage": 0.0,
+#                 "regen_enabled": 0.0,
+#                 "Odometer": 0.0,
+#                 "vehicle_direction": 0.0,
+#                 "MotorTemp": 0.0
+# }
 
 displayables = {"VehicleVelocity": 0.0, 
                 "Pack_SOC": 0.0,
@@ -251,6 +251,7 @@ class HomeFrame(Frame):
         self.after(1000, self.updater)
 
 
+
 # Worker function to receive packets off CAN line and
 # update displayables
 def receiver_worker():
@@ -267,9 +268,9 @@ def receiver_worker():
         while True:
             msg = bus.recv()
             decoded = cast(SignalDictType, db.decode_message(msg.arbitration_id, msg.data))
-            for k, v in decoded.items():
-                if k in displayables:
-                    displayables[k] = v
+            # for k, v in decoded.items():
+            #     if k in displayables:
+            #         displayables[k] = v
     else:
         while(True):
             with serial.Serial(SERIAL_PORT, SERIAL_BAUD_RATE) as receiver:
@@ -282,9 +283,9 @@ def receiver_worker():
                 data = bytearray.fromhex(raw[3:])
                 msg = can.Message(arbitration_id=tag, data=data)
                 decoded = cast(SignalDictType, db.decode_message(msg.arbitration_id, msg.data))
-                for k, v in decoded.items():
-                    if k in displayables:
-                        displayables[k] = v
+                # for k, v in decoded.items():
+                #     if k in displayables:
+                #         displayables[k] = v
 
 
 

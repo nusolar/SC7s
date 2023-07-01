@@ -31,16 +31,17 @@ queue: Queue[str] = Queue()
 # The database used for parsing with cantools
 db = cast(Database, cantools.database.load_file(Path(ROOT_DIR).joinpath("resources", "mppt.dbc")))
 add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "motor_controller.dbc"))
-add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "bms_altered.dbc"))
+# add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "bms_altered.dbc"))
 
 if store_data:
     # Connection
-    conn = can_db.connect("vitrual_bus_db")
+    conn = can_db.connect("virtual_bus_db")
 
 # The rows that will be added to the database
 rows = [Row(db, node.name) for node in db.nodes]
 
 def row_accumulator_worker(bus: can.ThreadSafeBus):
+    global car_display
     """
     Observes messages sent on the `bus` and accumulates them in a global row.
     """
@@ -55,8 +56,10 @@ def row_accumulator_worker(bus: can.ThreadSafeBus):
         with row_lock:
             for k, v in decoded.items():
                 row.signals[k].update(v)
-                car_display.displayables[k] = v
-                print(car_display.displayables)
+                if k in car_display.displayables.keys():
+                    # print(k, v)
+                    car_display.displayables[k] = v
+                    # print(car_display.displayables)
 
 def sender_worker():
     """

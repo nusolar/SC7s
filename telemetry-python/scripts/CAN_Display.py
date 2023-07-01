@@ -45,22 +45,34 @@ if store_data:
 rows = [Row(db, node.name) for node in db.nodes]
 
 def row_accumulator_worker(bus: can.ThreadSafeBus):
+    global car_display
     """
     Observes messages sent on the `bus` and accumulates them in a global row.
     """
     while True:
         msg = bus.recv()
         assert msg is not None
-        
-        row = find(rows, lambda r: r.owns(msg, db))
-        row = unwrap(row)
 
-        decoded = cast(SignalDictType, db.decode_message(msg.arbitration_id, msg.data))
-        with row_lock:
-            for k, v in decoded.items():
-                row.signals[k].update(v)
-                if k in car_display.displayables.keys():
-                    car_display.displayables[k] = v
+        row = find(rows, lambda r: r.owns(msg, db))
+        if row is not None:
+            row = unwrap(row)
+
+            # i = next(i for i, r in enumerate(rows) if r.owns(msg, db))
+            decoded = cast(SignalDictType, db.decode_message(msg.arbitration_id, msg.data))
+            with row_lock:
+                for k, v in decoded.items():
+                    row.signals[k].update(v)
+                    if k in car_display.displayables.keys():
+                        # print(k, v)
+                        car_display.displayables[k] = v
+                        # print(car_display.displayables)
+
+        
+        # decoded = cast(SignalDictType, db.decode_message(msg.arbitration_id, msg.data))
+        # with row_lock:
+        #     for k, v in decoded.items():
+        #         rows[i].signals[k].update(v)
+
 
 # TODO: Buffering sucks. Get rid of the need for this (with more space-efficient serialization).
 def buffered_payload(payload: str, chunk_size: int = 256, terminator: str = BUFFERED_XBEE_MSG_END) -> list[str]:
@@ -111,13 +123,13 @@ if __name__ == "__main__":
     # # Create a thread to serialize rows as would be necessary with XBees
     sender = Thread(target=sender_worker, daemon=True)
 
-    #display
-    root = car_display.CarDisplay()
-    root.mainloop()
-
     # Start the threads
     accumulator.start()
     sender.start()
+
+    #display
+    root = car_display.CarDisplay()
+    root.mainloop()
 
     # Spin forever.
     while True: ...
