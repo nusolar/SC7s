@@ -11,39 +11,46 @@ telemetry-python
 ├── example-data
 ├── scripts
 └── src
-    ├── backend
     ├── can
     ├── resources
     └── xbee-tests
 ```
 
 The `scripts` directory contains executable python scripts. 
-* `no_gui.py` is a simple CAN parser that reads off a serial
-  port and prints the parsed data to the terminal. This is
+* `real_bus.py` is a simple CAN parser that reads off a CAN
+  bus and prints the parsed data to the terminal. This is
   used for testing.
-* `sender.py` parses CAN data off a serial port, like `no_gui.py`,
+* `virtual_bus.py` is similar to `real_bus.py`, except the CAN
+  Bus is simulated and data is mocked. This is useful for testing
+  without connecting to a live CAN bus.
+* `sender.py` parses CAN data from the bus, like `real_bus.py`,
   but sends the data as JSON from one XBee radio device
   to another. This program is intended to run onboard the
   car and send parsed data via XBees to the basestation.
-* `can_recv_app.py`, running on the basestation, receives
+* `virtual_sender.py` functions similar to `sender.py`, except
+  that, like `virtual_bus.py`, the CAN traffic is simulated.
+* `receiver.py`, running on the basestation, receives
   parsed data from `sender.py` and stores them in a
   database.
 * `solar_car_display.py` monitors CAN data and presents
   is an onboard dispay to the driver.
-* `gps_display.py` is not relevant yet.
+* `dbc_builder.py` provides a way to conveniently create dbc
+  files for devices on the CAN bus based off 'abstract' dbc files
+  for these devices. It can, for example, create a dbc file for three
+  MPPT devices (say, one at base adress `0x600`, another at `0x610`,
+  and the third at `0x620`) by using `abstract_mppt.dbc` (in `src/resources`).
 
 The `example-data` folder contains CAN data, both raw
 and parsed, collected off MPPTs, motor controllers, etc.
 
 The `src` contains classes and functions leveraged by the
 programs in `scripts`. 
-* The `can` library contains logic for parsing CAN data 
-  off a serial port. It uses `resources/can_table.csv`
-  to determine descriptions and data from raw CAN frames.
-* `backend` provides functions related to managing the
-  database of CAN values on the basestation.
-* `xbee-tests` contains some files used for testing
-  XBee radio connections.
+* `sql.py` contains helper functions for database interactions.
+* `util.py` contains various minor utilites.
+* Modules in the `can` directory contains logic for managing, simulating, and
+  serializing aggregrate CAN data.
+* `resources` houses all non-source-code files which are relevant to the system,
+  including dbc files, SQLite databases, etc.
 
 ## Setup
 
@@ -61,23 +68,6 @@ to familiarize yourself with virtual environments.
 Once in a virtual environment, you can run
 
 ```bash
-$ make install
+$ pip install -e .
 ```
 to install all the required packages.
-
-**DO NOT** use `pip install -r`. The `Makefile`
-provides a wrapper around this to ensure that our code is also installed as
-an editable package.
-
-If you install a third-party package using `pip` during development, make sure
-to add this to `requirements.txt`. Do this by running
-
-```bash
-$ make freeze > requirements.txt
-```
-
-**DO NOT** use `pip freeze`. The `Makefile` provides a wrapper around this
-to ensure that our editable package is handled correctly.
-
-**DO NOT** run `make freeze` if you are not in a virtual environment.
-This will end up polluting `requirements.txt` with unneeded packages.

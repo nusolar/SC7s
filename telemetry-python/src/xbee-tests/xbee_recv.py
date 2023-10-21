@@ -17,7 +17,7 @@ from digi.xbee.devices import XBeeDevice
 # TODO: Replace with the serial port where your local module is connected to.
 PORT = "COM9"
 # TODO: Replace with the baud rate of your local module.
-BAUD_RATE = 9600
+BAUD_RATE = 57600
 
 def main():
     print(" +-----------------------------------------+")
