@@ -51,7 +51,12 @@ displayables = {"VehicleVelocity": 0.0,
                 "Pack_SOC": 0.0,
                 "Output_current": 0.0,
                 "Avg_Opencell_Voltage": 0.0,
-                "MotorTemp": 0.0
+                "MotorTemp": 0.0,
+                "Odometer": 0.0,
+                "input_power1": 0.0,
+                "input_power2": 0.0,
+                "output_power1": 0.0,
+                "output_power2": 0.0
 }
 
 class CarDisplay(Tk):
@@ -254,38 +259,38 @@ class HomeFrame(Frame):
 
 # Worker function to receive packets off CAN line and
 # update displayables
-def receiver_worker():
-    db = cast(Database, cantools.database.load_file(Path(ROOT_DIR).joinpath("resources", "mppt.dbc")))
-    add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "motor_controller.dbc"))
+# def receiver_worker():
+#     db = cast(Database, cantools.database.load_file(Path(ROOT_DIR).joinpath("resources", "mppt.dbc")))
+#     add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "motor_controller.dbc"))
 
-    bustype = "virtual" if CAN_INTERFACE == "virtual" else "socketcan"
-    channel = VIRTUAL_BUS_NAME if CAN_INTERFACE == "virtual" else "can0"
-    if CAN_INTERFACE == "virtual":
-        start_virtual_can_bus(can.ThreadSafeBus(channel=channel, bustype=bustype), db)
+#     bustype = "virtual" if CAN_INTERFACE == "virtual" else "socketcan"
+#     channel = VIRTUAL_BUS_NAME if CAN_INTERFACE == "virtual" else "can0"
+#     if CAN_INTERFACE == "virtual":
+#         start_virtual_can_bus(can.ThreadSafeBus(channel=channel, bustype=bustype), db)
 
-    if CAN_INTERFACE == "virtual" or CAN_INTERFACE == "can0":
-        bus = can.ThreadSafeBus(channel=channel, bustype=bustype)
-        while True:
-            msg = bus.recv()
-            decoded = cast(SignalDictType, db.decode_message(msg.arbitration_id, msg.data))
-            # for k, v in decoded.items():
-            #     if k in displayables:
-            #         displayables[k] = v
-    else:
-        while(True):
-            with serial.Serial(SERIAL_PORT, SERIAL_BAUD_RATE) as receiver:
-                raw = receiver.read_until(b';').decode()
-                if len(raw) != 23: continue
-                raw = raw[1:len(raw) - 1]
-                raw = raw.replace('S', '')
-                raw = raw.replace('N', '')
-                tag = int(raw[0:3], 16)
-                data = bytearray.fromhex(raw[3:])
-                msg = can.Message(arbitration_id=tag, data=data)
-                decoded = cast(SignalDictType, db.decode_message(msg.arbitration_id, msg.data))
-                # for k, v in decoded.items():
-                #     if k in displayables:
-                #         displayables[k] = v
+#     if CAN_INTERFACE == "virtual" or CAN_INTERFACE == "can0":
+#         bus = can.ThreadSafeBus(channel=channel, bustype=bustype)
+#         while True:
+#             msg = bus.recv()
+#             decoded = cast(SignalDictType, db.decode_message(msg.arbitration_id, msg.data))
+#             # for k, v in decoded.items():
+#             #     if k in displayables:
+#             #         displayables[k] = v
+#     else:
+#         while(True):
+#             with serial.Serial(SERIAL_PORT, SERIAL_BAUD_RATE) as receiver:
+#                 raw = receiver.read_until(b';').decode()
+#                 if len(raw) != 23: continue
+#                 raw = raw[1:len(raw) - 1]
+#                 raw = raw.replace('S', '')
+#                 raw = raw.replace('N', '')
+#                 tag = int(raw[0:3], 16)
+#                 data = bytearray.fromhex(raw[3:])
+#                 msg = can.Message(arbitration_id=tag, data=data)
+#                 decoded = cast(SignalDictType, db.decode_message(msg.arbitration_id, msg.data))
+#                 # for k, v in decoded.items():
+#                 #     if k in displayables:
+#                 #         displayables[k] = v
 
 
 
@@ -294,8 +299,8 @@ def main():
     #   os.environ.__setitem__('DISPLAY', ':0.0')
 
     # start CAN reciever daemon thread
-    recd = threading.Thread(target=receiver_worker, daemon=True)
-    recd.start()
+    # recd = threading.Thread(target=receiver_worker, daemon=True)
+    # recd.start()
 
     # while True:
     #     time.sleep(2)
