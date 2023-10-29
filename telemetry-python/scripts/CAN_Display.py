@@ -27,6 +27,7 @@ xbee = None
 remote = None
 store_data = False
 should_send = False
+should_display = True
 
 # Thread communication globals
 row_lock = Lock()
@@ -62,7 +63,6 @@ def row_accumulator_worker(bus: can.ThreadSafeBus):
                 for k, v in decoded.items():
                     row.signals[k].update(v)
                     if k in car_display.displayables.keys():
-                        # print(k, v)
                         car_display.displayables[k] = v
                         # print(car_display.displayables)
 
@@ -127,8 +127,9 @@ if __name__ == "__main__":
     sender.start()
 
     #display
-    root = car_display.CarDisplay()
-    root.mainloop()
+    if should_display:
+        root = car_display.CarDisplay()
+        root.mainloop()
 
     # Spin forever.
     while True: ...
