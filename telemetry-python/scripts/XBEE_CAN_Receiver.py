@@ -10,7 +10,9 @@ from digi.xbee.models.message import XBeeMessage
 from src import ROOT_DIR, BUFFERED_XBEE_MSG_END
 from src.can.row import Row
 from src.util import add_dbc_file
-import src.sql
+# import src.sql
+
+import src.can_db as can_db
 
 # The database used for parsing with cantools
 db = cast(Database, cantools.database.load_file(Path(ROOT_DIR).joinpath("resources", "mppt.dbc")))
@@ -34,6 +36,12 @@ BAUD_RATE = 57600
 xbee = XBeeDevice(PORT, BAUD_RATE)
 xbee.open()
 
+store_data = True
+
+# Connect to a SQLite database.
+if store_data:
+    conn = can_db.connect("can_receiving_db")
+
 # The rows that will be added to the database
 rows = [Row(db, node.name) for node in db.nodes]
 
@@ -52,10 +60,13 @@ def process_message(message: XBeeMessage) -> None:
         s = "".join(received) + s[:len(s) - len(BUFFERED_XBEE_MSG_END)]
         received.clear()
 
-        # TODO: deserializing can fail, print/log a warning if this occurs.
-        r = Row.deserialize(s)
-        src.sql.insert_row(r, cursor)
-        conn.commit()
+        try:
+            r = Row.deserialize(s)
+        except:
+            raise Exception("Error deserializing row")
+
+        if store_data:
+            can_db.add_row(conn, r.timestamp, r.signals.values(), r.name)
     else:
         received.append(s)
 
@@ -64,16 +75,11 @@ if __name__ == "__main__":
     # This script receives CAN data sent by XBee (through sender.py or virtual_sender.py)
     # and stores it in an SQL database.
 
-    # Connect to a SQLite database.
-    conn   = sqlite3.connect(Path(ROOT_DIR).joinpath("resources", "telemetry.db"), check_same_thread=False)
-    cursor = conn.cursor()
-
     # Create a table for each device on the car's CAN network.
-    for row in rows:
-        src.sql.create_table(row, cursor)
-    conn.commit()
-
-    print("ready to receive")
+    if store_data:
+        for row in rows:
+            can_db.create_tables(conn, row.name, row.signals.items())
+        print("ready to receive")
 
     # Register the XBee callback
     xbee.add_data_received_callback(process_message)
