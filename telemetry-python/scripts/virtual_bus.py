@@ -35,7 +35,7 @@ add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "bms_altered.dbc"))
 
 if store_data:
     # Connection
-    conn = can_db.connect("vitrual_bus_db")
+    conn = can_db.connect(1, "vitrual_bus_db")
 
 # The rows that will be added to the database
 rows = [Row(db, node.name) for node in db.nodes]
@@ -69,7 +69,7 @@ def sender_worker():
         for row in copied:
             row.stamp()
             if store_data:
-                can_db.add_row(conn, row.timestamp, row.signals.values(), row.name)
+                can_db.add_row(conn, row.timestamp, row.signals.values(), row.name, 1)
             queue.put(row.serialize())
 
 if __name__ == "__main__":
@@ -94,7 +94,7 @@ if __name__ == "__main__":
 
     if store_data:
         for row in rows:
-            can_db.create_tables(conn, row.name, row.signals.items())
+            can_db.create_tables(conn, row.name, row.signals.items(), 1)
         print("ready to receive")
 
     # Start the virtual bus

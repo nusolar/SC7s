@@ -2,6 +2,7 @@
 # this is the code that only interacts with the database
 
 import sqlite3
+import psycopg2
 import pkg_resources, os
 from pathlib import Path
 from src import ROOT_DIR
@@ -10,19 +11,27 @@ from src import ROOT_DIR
 
 GET_ALL_DATA = "SELECT * FROM can_test_db;"
 
-def connect(filename="TEST"):
+def connect(dbEngine, filename="TEST"):
     # open data file. if not there, create one
     # os and pathlib are used to create the db file in the same location every
     # time.
-    db_file = Path(ROOT_DIR).joinpath('resources', f"{filename}.db")
+
+    # sqlite db_file version
+    if dbEngine == 1:
+        db_file = Path(ROOT_DIR).joinpath('resources', f"{filename}.db")
+        return sqlite3.connect(db_file, isolation_level=None, check_same_thread=False)
     # db_file = pkg_resources.resource_filename(
     #     __name__,
     #     os.path.join(os.pardir, 'resources', f"{filename}.db"))
-    return sqlite3.connect(db_file, 
-                           isolation_level=None, 
-                           check_same_thread=False)
+    elif dbEngine == 2:
+        return psycopg2.connect(
+            host = "localhost",
+            database = "testing",
+            # user = "jasonhu27",
+            # password = "Esketit123"
+        )
 
-def create_tables(connection, tablename, columns):
+def create_tables(connection, tablename, columns, dbEngine):
     #context manager, when we create database, it gets saved to the ^^ file
 
     #create a string of question marks depending on # of column values
@@ -34,18 +43,32 @@ def create_tables(connection, tablename, columns):
 
     # not global anymore - the tablename and such 
     with connection:
-        connection.execute(CREATE_CAN_TABLE)
+        if dbEngine == 1:
+            connection.execute(CREATE_CAN_TABLE)
+        elif dbEngine == 2:
+            cursor = connection.cursor()
+            cursor.execute(CREATE_CAN_TABLE)
+            connection.commit()
 
 
-def add_row(connection, r_timestamp, r_values, r_name):
-    qmarks = f"(?, " + ", ".join("?" for _ in r_values) + ")"
+def add_row(connection, r_timestamp, r_values, r_name, dbEngine):
+    qmarks = f"(%s, " + ", ".join("%s" for _ in r_values) + ")"
     vals = [r_timestamp] + [v.value for v in r_values]
     insert_row = f"INSERT INTO {r_name} VALUES\n" + qmarks
 
     with connection:
-        connection.execute(insert_row, vals) # 2nd param has to be tuple
+        if dbEngine == 1:
+            connection.execute(insert_row, vals)
+        elif dbEngine == 2:
+            cursor = connection.cursor()
+            cursor.execute(insert_row, vals) # 2nd param has to be tuple
+            connection.commit()
 
 
-def get_all_data(connection):
+def get_all_data(connection, dbEngine):
     with connection:
-        return connection.execute(GET_ALL_DATA).fetchall()
+        if dbEngine == 1:
+            return connection.execute(GET_ALL_DATA).fetchall()
+        elif dbEngine == 2:
+            cursor = connection.cursor()
+            return cursor.execute(GET_ALL_DATA).fetchall()
