@@ -17,6 +17,8 @@ from src.util import add_dbc_file, find, unwrap
 from src.can.virtual import start_virtual_can_bus
 # import src.sql
 import src.can_db as can_db
+from src.can_db import SQLiteEngine
+from src.can_db import PostGresEngine
 
 store_data = True;
 
@@ -27,15 +29,18 @@ VIRTUAL_BUS_NAME = "virtbus"
 # Thread communication globals
 row_lock = Lock()
 queue: Queue[str] = Queue()
-
+ 
 # The database used for parsing with cantools
 db = cast(Database, cantools.database.load_file(Path(ROOT_DIR).joinpath("resources", "mppt.dbc")))
 add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "motor_controller.dbc"))
 add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "bms_altered.dbc"))
 
+testSQLite = SQLiteEngine("virtual_bus_db")
+testPostGres = PostGresEngine("localhost", "testing")
+
 if store_data:
     # Connection
-    conn = can_db.connect(1, "vitrual_bus_db")
+    conn = can_db.connect(testSQLite)
 
 # The rows that will be added to the database
 rows = [Row(db, node.name) for node in db.nodes]
@@ -69,7 +74,7 @@ def sender_worker():
         for row in copied:
             row.stamp()
             if store_data:
-                can_db.add_row(conn, row.timestamp, row.signals.values(), row.name, 1)
+                can_db.add_row(conn, row.timestamp, row.signals.values(), row.name, testSQLite)
             queue.put(row.serialize())
 
 if __name__ == "__main__":
@@ -94,7 +99,7 @@ if __name__ == "__main__":
 
     if store_data:
         for row in rows:
-            can_db.create_tables(conn, row.name, row.signals.items(), 1)
+            can_db.create_tables(conn, row.name, row.signals.items(), testSQLite)
         print("ready to receive")
 
     # Start the virtual bus
