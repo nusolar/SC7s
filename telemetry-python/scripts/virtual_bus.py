@@ -30,6 +30,10 @@ VIRTUAL_BUS_NAME = "virtbus"
 row_lock = Lock()
 queue: Queue[str] = Queue()
  
+power_cantags = ["BusCurrent", "BusVoltage", "Output_current", "Output_voltage"]
+power_canvals = {"BusCurrent1": None, "BusCurrent2": None, "BusVoltage1": None, 
+                 "BusVoltage2": None, "Output_current1": None, "Output_current2": None, "Output_voltage1": None, "Output_voltage2": None}
+
 # The database used for parsing with cantools
 db = cast(Database, cantools.database.load_file(Path(ROOT_DIR).joinpath("resources", "mppt.dbc")))
 add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "motor_controller.dbc"))
@@ -47,6 +51,7 @@ if store_data:
 rows = [Row(db, node.name) for node in db.nodes]
 
 def row_accumulator_worker(bus: can.ThreadSafeBus):
+    global car_display
     """
     Observes messages sent on the `bus` and accumulates them in a global row.
     """
@@ -61,8 +66,24 @@ def row_accumulator_worker(bus: can.ThreadSafeBus):
         with row_lock:
             for k, v in decoded.items():
                 row.signals[k].update(v)
-                car_display.displayables[k] = v
-                print(car_display.displayables)
+                if k in car_display.displayables.keys():
+                    # print(k, v)
+                    car_display.displayables[k] = v
+                    # print(car_display.displayables)
+                elif k in power_cantags:
+                    keyname = ""
+                    if msg.arbitration_id == "0x400" or msg.arbitration_id == "0x610":
+                        keyname = f"{k}1"
+                    elif msg.arbitration_id == "0x440" or msg.arbitration_id == "0x620":
+                        keyname = f"{k}2"
+
+                    if len(keyname) > 0:
+                        power_canvals[keyname] = v
+
+                    
+def set_power():
+    if power_canvals["BusCurrent1"] and power_canvals["BusVoltage1"]:
+        car_display.displayables["input_power1"] = power_canvals["BusCurrent1"] * power_canvals["BusVoltage1"];
 
 def sender_worker():
     """

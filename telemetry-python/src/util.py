@@ -29,7 +29,14 @@ def find(it: Iterable[_T], predicate: Callable[[_T], bool]) -> Optional[_T]:
     Find the first element in `it` which satisfies `predicate`.
     Returns `None` if there is no such element.
     """
-    return next((x for x in it if predicate(x)), None)
+    next_element = None
+    try:
+        next_element = next((x for x in it if predicate(x)), None)
+    except:
+    # except Exception as e:
+        print("couldn't find")
+    
+    return next_element
 
 def expect(x: Optional[_T], message: str) -> _T:
     """
