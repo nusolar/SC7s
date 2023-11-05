@@ -18,7 +18,7 @@ from src.can.virtual import start_virtual_can_bus
 # import src.sql
 import src.can_db as can_db
 from src.can_db import SQLiteEngine
-from src.can_db import PostGresEngine
+from src.can_db import PostgresEngine
 
 store_data = True;
 
@@ -35,12 +35,13 @@ db = cast(Database, cantools.database.load_file(Path(ROOT_DIR).joinpath("resourc
 add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "motor_controller.dbc"))
 add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "bms_altered.dbc"))
 
-testSQLite = SQLiteEngine("virtual_bus_db")
-testPostGres = PostGresEngine("localhost", "testing")
+SQLitePath = Path(ROOT_DIR).joinpath('resources', "virtual_bus.db")
+testSQLite = SQLiteEngine(SQLitePath)
+testPostgres = PostgresEngine("localhost", "testing")
 
 if store_data:
     # Connection
-    conn = can_db.connect(testSQLite)
+    conn = can_db.connect(testPostgres)
 
 # The rows that will be added to the database
 rows = [Row(db, node.name) for node in db.nodes]
@@ -74,7 +75,7 @@ def sender_worker():
         for row in copied:
             row.stamp()
             if store_data:
-                can_db.add_row(conn, row.timestamp, row.signals.values(), row.name, testSQLite)
+                can_db.add_row(conn, row.timestamp, row.signals.values(), row.name, testPostgres)
             queue.put(row.serialize())
 
 if __name__ == "__main__":
@@ -99,7 +100,7 @@ if __name__ == "__main__":
 
     if store_data:
         for row in rows:
-            can_db.create_tables(conn, row.name, row.signals.items(), testSQLite)
+            can_db.create_tables(conn, row.name, row.signals.items(), testPostgres)
         print("ready to receive")
 
     # Start the virtual bus
