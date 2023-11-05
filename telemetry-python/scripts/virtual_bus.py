@@ -70,7 +70,7 @@ def sender_worker():
             row.stamp()
             if store_data:
                 can_db.add_row(conn, row.timestamp, row.signals.values(), row.name)
-            queue.put(row.serialize())
+                queue.put(row.serialize())
 
 if __name__ == "__main__":
     # This program simulates CAN bus traffic, onboard CAN frame parsing, and XBee data

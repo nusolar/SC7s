@@ -1,0 +1,1 @@
+Avg_Opencell_Voltage,Blank,CRC_Checksum,CellBalancing,CellId,CellOpenVoltage,CellResistance,CellVoltage,Checksum,High_Cell_Resistance,High_Opencell_Voltage,Max_Cell_Number,Maximum_Pack_Voltage,Pack_Current,Pack_Open_Voltage,Pack_SOC,Relay_State,Total_Pack_Cycles

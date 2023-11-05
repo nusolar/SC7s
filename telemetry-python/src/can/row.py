@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Optional
 from datetime import datetime
-import json
+import msgpack
 
 from cantools.database.can.database import Database
 import can.message
@@ -63,14 +63,25 @@ class Row:
     def serialize(self, indent=None) -> str:
         if self.timestamp is None:
             raise Exception("Attempt to serialize unstamped row")
-        return json.dumps({
+       #Create a dictionary of signals with the keys sorted and replaced by numbers
+        signals = {k: v.fetch() for k, v in self.signals.items()}
+        sig_keys = list(signals.keys())
+        sig_keys.sort()
+        signals = {i:signals[sig_keys[i]] for i in range(len(sig_keys))}
+        #Serialize using row data using msgpack
+        return msgpack.packb({
             "timestamp": self.timestamp,
             "name"     : self.name,
-            "signals"  : {k: v.fetch() for k, v in self.signals.items()}
-        }, indent=indent)
+            "signals"  : signals
+        },use_bin_type=True)
 
     @classmethod
     def deserialize(cls, s: str) -> Row:
-        d = json.loads(s)
-        signals = {k: CanValue(v) for k, v in d["signals"].items()}
+        #Deserialize data using message pack and replace number keys by name of keys depending on device name using a text file 
+        d = msgpack.unpackb(s, raw=False, strict_map_key=False)
+        with open(f"{d['name']}_sig_keys.txt","r") as f:
+            keys = f.read().split(",")
+            vals = list(d['signals'].values())
+            d_sig = {keys[i]:vals[i] for i in range(len(vals))}
+        signals = {k: CanValue(v) for k, v in d_sig.items()}
         return Row(signals, d["name"], timestamp=d["timestamp"])
