@@ -9,5 +9,6 @@ dependencies = [
     "pyserial",
     "cantools",
     "python-can",
-    "digi-xbee"
+    "digi-xbee",
+    "msgpack"
 ]
