@@ -2,7 +2,6 @@ from typing import cast
 from time import sleep
 from threading import Thread, Lock
 from queue import Queue # threadsafe mpmc queue used to emulate data transfer over XBee
-import sqlite3
 from pathlib import Path
 from copy import deepcopy
 
@@ -17,10 +16,7 @@ from src.util import add_dbc_file, find, unwrap
 from src.can.virtual import start_virtual_can_bus
 # import src.sql
 import src.can_db as can_db
-from src.can_db import SQLiteEngine
-from src.can_db import PostgresEngine
-
-store_data = True;
+from src.can_db import SQLiteEngine, PostgresEngine
 
 import src.car_gui as car_display
 
@@ -30,22 +26,16 @@ VIRTUAL_BUS_NAME = "virtbus"
 row_lock = Lock()
 queue: Queue[str] = Queue()
  
-power_cantags = ["BusCurrent", "BusVoltage", "Output_current", "Output_voltage"]
-power_canvals = {"BusCurrent1": None, "BusCurrent2": None, "BusVoltage1": None, 
-                 "BusVoltage2": None, "Output_current1": None, "Output_current2": None, "Output_voltage1": None, "Output_voltage2": None}
-
 # The database used for parsing with cantools
 db = cast(Database, cantools.database.load_file(Path(ROOT_DIR).joinpath("resources", "mppt.dbc")))
 add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "motor_controller.dbc"))
-add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "bms_altered.dbc"))
+# add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "bms_altered.dbc"))
 
-SQLitePath = Path(ROOT_DIR).joinpath('resources', "virtual_bus.db")
-testSQLite = SQLiteEngine(SQLitePath)
-testPostgres = PostgresEngine("localhost", "testing")
+onboard_engine = SQLiteEngine(Path(ROOT_DIR).joinpath("resources", "virtual_onboard.db"))
+onboard_conn = can_db.connect(onboard_engine)
 
-if store_data:
-    # Connection
-    conn = can_db.connect(testPostgres)
+remote_engine = SQLiteEngine(Path(ROOT_DIR).joinpath("resources", "virtual_remote.db"))
+remote_conn = can_db.connect(remote_engine)
 
 # The rows that will be added to the database
 rows = [Row(db, node.name) for node in db.nodes]
@@ -65,38 +55,26 @@ def row_accumulator_worker(bus: can.ThreadSafeBus):
         decoded = cast(SignalDictType, db.decode_message(msg.arbitration_id, msg.data))
         with row_lock:
             for k, v in decoded.items():
+                v = cast(float, v)
+
                 row.signals[k].update(v)
                 if k in car_display.displayables.keys():
-                    # print(k, v)
                     car_display.displayables[k] = v
-                    # print(car_display.displayables)
-                elif k in power_cantags:
-                    keyname = ""
-                    if msg.arbitration_id == "0x400" or msg.arbitration_id == "0x610":
-                        keyname = f"{k}1"
-                    elif msg.arbitration_id == "0x440" or msg.arbitration_id == "0x620":
-                        keyname = f"{k}2"
-
-                    if len(keyname) > 0:
-                        power_canvals[keyname] = v
-
                     
-def set_power():
-    if power_canvals["BusCurrent1"] and power_canvals["BusVoltage1"]:
-        car_display.displayables["input_power1"] = power_canvals["BusCurrent1"] * power_canvals["BusVoltage1"];
-
 def sender_worker():
     """
     Serializes rows into the queue.
     """
+    for row in rows:
+        can_db.create_tables(onboard_conn, row.name, row.signals.items(), onboard_engine)
+
     while True:
         sleep(2.0)
         with row_lock:
             copied = deepcopy(rows)
         for row in copied:
             row.stamp()
-            if store_data:
-                can_db.add_row(conn, row.timestamp, row.signals.values(), row.name, testPostgres)
+            can_db.add_row(onboard_conn, row.timestamp, row.signals.values(), row.name, onboard_engine)
             queue.put(row.serialize())
 
 if __name__ == "__main__":
@@ -119,11 +97,6 @@ if __name__ == "__main__":
     # Upon reception, the main thread deserializes the row and inserts it into a
     # database table.
 
-    if store_data:
-        for row in rows:
-            can_db.create_tables(conn, row.name, row.signals.items(), testPostgres)
-        print("ready to receive")
-
     # Start the virtual bus
     start_virtual_can_bus(can.ThreadSafeBus(VIRTUAL_BUS_NAME, bustype="virtual"), db)
 
@@ -138,22 +111,11 @@ if __name__ == "__main__":
     accumulator.start()
     sender.start()
 
-    #display
-    root = car_display.CarDisplay()
-    root.mainloop()
-
-    while True: ...
-
     # Use the main thread to deserialize rows and update the databse
     # as if it were running on the base station
-    # conn   = sqlite3.connect(Path(ROOT_DIR).joinpath("resources", "telemetry.db"))
-    # cursor = conn.cursor()
+    for row in rows:
+        can_db.create_tables(remote_conn, row.name, row.signals.items(), remote_engine)
 
-    # for row in rows:
-    #     src.sql.create_table(row, cursor)
-    # conn.commit()
-
-    # while True:
-    #     r = Row.deserialize(queue.get())
-    #     src.sql.insert_row(r, cursor)
-    #     conn.commit()
+    while True:
+        r = Row.deserialize(queue.get())
+        can_db.add_row(remote_conn, r.timestamp, r.signals.values(), r.name, remote_engine)
