@@ -1,7 +1,8 @@
 from __future__ import annotations
 from typing import Optional
 from datetime import datetime
-import msgpack
+import json, msgpack
+import pickle
 
 from cantools.database.can.database import Database
 import can.message
