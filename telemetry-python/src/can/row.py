@@ -3,7 +3,8 @@ from typing import Optional
 from datetime import datetime
 import json, msgpack
 import pickle
-
+from src import ROOT_DIR
+from pathlib import Path
 from cantools.database.can.database import Database
 import can.message
 
@@ -80,7 +81,8 @@ class Row:
     def deserialize(cls, s: str) -> Row:
         #Deserialize data using message pack and replace number keys by name of keys depending on device name using a text file 
         d = msgpack.unpackb(s, raw=False, strict_map_key=False)
-        with open(f"{d['name']}_sig_keys.txt","r") as f:
+        key_file = Path(ROOT_DIR).joinpath("resources","signal_keys",f"{d['name']}_sig_keys.txt")
+        with open(key_file,"r") as f:
             keys = f.read().split(",")
             vals = list(d['signals'].values())
             d_sig = {keys[i]:vals[i] for i in range(len(vals))}
