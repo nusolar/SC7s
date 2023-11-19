@@ -1,9 +1,21 @@
+from typing import cast
+from pathlib import Path
 import unittest
-from src import ROOT_DIR
 import random
-from src.can.row import CanValue, Row
 from datetime import datetime
 from copy import deepcopy
+
+import cantools.database
+from cantools.database.can.database import Database
+
+from src import ROOT_DIR
+from src.util import add_dbc_file
+from src.can.row import CanValue, Row
+
+# The database used for parsing with cantools
+db = cast(Database, cantools.database.load_file(Path(ROOT_DIR).joinpath("resources", "mppt.dbc")))
+add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "motor_controller.dbc"))
+add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "bms_altered.dbc"))
 
 class TestCANSerialization(unittest.TestCase):
     def setUp(self):
@@ -15,25 +27,24 @@ class TestCANSerialization(unittest.TestCase):
         Test (de)serialization for all devices sending CAN data on a network.
         """
 
-        device_addresses = [
-            "MPPT_0x600", "MPPT_0x610", "MPPT_0x620", "BMS", "MOTOR_CONTROLLER_0x400", "Third_Party_Device"
-        ]
+        device_addresses = [n.name for n in db.nodes]
 
         for name in device_addresses:
-            with open(self.sig_folder.joinpath(f"{name}_sig_keys.txt"), "r") as sig_file:
-                sig_keys = sig_file.read().split(",")
-
-            signals = {k: CanValue(random.uniform(0, 15)) for k in sig_keys}
+            keys = Row.sorted_signal_names(name, db)
+            signals = {k: CanValue(random.uniform(0, 15)) for k in keys}
 
             row = Row(signals, name, self.timestamp)
 
             # Deepcopy to avoid resetting the row when serializing
-            serialized = Row.deserialize(deepcopy(row).serialize())
+            serialized = Row.deserialize(deepcopy(row).serialize(), db)
 
             self.assertEqual(row.timestamp, serialized.timestamp)
             self.assertEqual(row.name, serialized.name)
-            for key in sig_keys:
-                self.assertEqual(row.signals[key].value, serialized.signals[key].value)
+
+            self.assertEqual(
+                {k: v.value for (k, v) in row.signals.items()},
+                {k: v.value for (k, v) in serialized.signals.items()}
+            )
             
 if __name__ == "__main__":
     unittest.main()

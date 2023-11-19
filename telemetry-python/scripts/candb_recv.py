@@ -38,7 +38,7 @@ def process_message(message: XBeeMessage) -> None:
     if s.endswith(BUFFERED_XBEE_MSG_END):
         s = "".join(received) + s[:len(s) - len(BUFFERED_XBEE_MSG_END)]
         received.clear()
-        r = Row.deserialize(s)
+        r = Row.deserialize(s, db)
         can_db.add_row(conn, r.timestamp, r.signals.values(), r.name)
     else:
         received.append(s)

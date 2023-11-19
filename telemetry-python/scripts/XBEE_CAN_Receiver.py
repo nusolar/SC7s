@@ -53,7 +53,7 @@ def process_message(message: XBeeMessage) -> None:
         received.clear()
 
         # TODO: deserializing can fail, print/log a warning if this occurs.
-        r = Row.deserialize(s)
+        r = Row.deserialize(s, db)
         src.sql.insert_row(r, cursor)
         conn.commit()
     else:
