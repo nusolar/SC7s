@@ -62,20 +62,21 @@ class Row:
     def stamp(self):
         self.timestamp = datetime.now().timestamp()
 
-    def serialize(self, indent=None) -> str:
+    def serialize(self) -> str:
         if self.timestamp is None:
             raise Exception("Attempt to serialize unstamped row")
-       #Create a dictionary of signals with the keys sorted and replaced by numbers
+
+        #Create a dictionary of signals with the keys sorted and replaced by numbers
         signals = {k: v.fetch() for k, v in self.signals.items()}
         sig_keys = list(signals.keys())
         sig_keys.sort()
         signals = {i:signals[sig_keys[i]] for i in range(len(sig_keys))}
+
         #Serialize using row data using msgpack
-        return msgpack.packb({
-            "timestamp": self.timestamp,
-            "name"     : self.name,
-            "signals"  : signals
-        },use_bin_type=True)
+        return msgpack.packb(
+            {"timestamp": self.timestamp, "name": self.name, "signals": signals},
+            use_bin_type=True
+        ) # type: ignore
 
     @classmethod
     def deserialize(cls, s: str) -> Row:
