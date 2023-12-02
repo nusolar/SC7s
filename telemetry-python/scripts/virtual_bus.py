@@ -18,6 +18,7 @@ from src.can.virtual import start_virtual_can_bus
 import src.can_db as can_db
 from sqlalchemy import create_engine, URL
 from sqlalchemy.orm import Session
+import argparse
 
 import src.car_gui as car_display
 
@@ -32,14 +33,15 @@ db = cast(Database, cantools.database.load_file(Path(ROOT_DIR).joinpath("resourc
 add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "motor_controller.dbc"))
 # add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "bms_altered.dbc"))
 
-onboard_engine = create_engine(
-    URL.create(drivername="sqlite",database=str(Path(ROOT_DIR).joinpath("resources", "virtual_onboard.db")))
-)
+parser = argparse.ArgumentParser()
+parser.add_argument('--urlonboard', type=str, default=str(URL.create(drivername="sqlite",database=str(Path(ROOT_DIR).joinpath("resources", "virtual_onboard.db")))))
+parser.add_argument('--urlremote', type=str, default=str(URL.create(drivername="sqlite",database=str(Path(ROOT_DIR).joinpath("resources", "virtual_remote.db")))))
+args = parser.parse_args()
+
+onboard_engine = create_engine(args.urlonboard)
 onboard_session = Session(onboard_engine)
 
-remote_engine = create_engine(
-    URL.create(drivername="sqlite",database=str(Path(ROOT_DIR).joinpath("resources", "virtual_remote.db")))
-)
+remote_engine = create_engine(args.urlremote)
 remote_session = Session(remote_engine)
 
 
