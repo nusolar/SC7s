@@ -115,7 +115,7 @@ def sender_worker():
         for row in copied:
             row.stamp()
             if store_data:
-                can_db.add_row(conn, row.timestamp, row.signals.values(), row.name)
+                can_db.add_row(conn, row)
             for chunk in buffered_payload(row.serialize()):
                 print(chunk)
                 print("\n")
@@ -137,7 +137,7 @@ if __name__ == "__main__":
         startXbee()
     if store_data:
         for row in rows:
-            can_db.create_tables(conn, row.name, row.signals.items())
+            can_db.create_tables(conn, row)
         print("ready to receive")
     # Start the bus
     # Create a thread to read of the bus and maintain the rows

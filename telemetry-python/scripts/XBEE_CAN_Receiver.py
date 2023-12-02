@@ -66,7 +66,7 @@ def process_message(message: XBeeMessage) -> None:
             raise Exception("Error deserializing row")
 
         if store_data:
-            can_db.add_row(conn, r.timestamp, r.signals.values(), r.name)
+            can_db.add_row(conn, r)
     else:
         received.append(s)
 

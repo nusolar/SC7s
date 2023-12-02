@@ -32,10 +32,14 @@ db = cast(Database, cantools.database.load_file(Path(ROOT_DIR).joinpath("resourc
 add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "motor_controller.dbc"))
 # add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "bms_altered.dbc"))
 
-onboard_engine = create_engine(URL.create(drivername="sqlite",database=str(Path(ROOT_DIR).joinpath("resources", "virtual_onboard.db"))))
+onboard_engine = create_engine(
+    URL.create(drivername="sqlite",database=str(Path(ROOT_DIR).joinpath("resources", "virtual_onboard.db")))
+)
 onboard_session = Session(onboard_engine)
 
-remote_engine = create_engine(URL.create(drivername="sqlite",database=str(Path(ROOT_DIR).joinpath("resources", "virtual_remote.db"))))
+remote_engine = create_engine(
+    URL.create(drivername="sqlite",database=str(Path(ROOT_DIR).joinpath("resources", "virtual_remote.db")))
+)
 remote_session = Session(remote_engine)
 
 
@@ -77,7 +81,7 @@ def sender_worker():
             copied = deepcopy(rows)
         for row in copied:
             row.stamp()
-            can_db.add_row(onboard_session, row.timestamp, row.signals.values(), row.name, onboard_engine)
+            can_db.add_row(onboard_session, row)
             queue.put(row.serialize())
 
 if __name__ == "__main__":
@@ -121,4 +125,4 @@ if __name__ == "__main__":
 
     while True:
         r = Row.deserialize(queue.get())
-        can_db.add_row(remote_session, r.timestamp, r.signals.values(), r.name, remote_engine)
+        can_db.add_row(remote_session, r)
