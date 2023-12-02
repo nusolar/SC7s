@@ -16,7 +16,8 @@ from src.util import add_dbc_file, find, unwrap
 from src.can.virtual import start_virtual_can_bus
 # import src.sql
 import src.can_db as can_db
-from src.can_db import SQLiteEngine, PostgresEngine
+from sqlalchemy import create_engine, URL
+from sqlalchemy.orm import Session
 
 import src.car_gui as car_display
 
@@ -31,11 +32,13 @@ db = cast(Database, cantools.database.load_file(Path(ROOT_DIR).joinpath("resourc
 add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "motor_controller.dbc"))
 # add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "bms_altered.dbc"))
 
-onboard_engine = SQLiteEngine(Path(ROOT_DIR).joinpath("resources", "virtual_onboard.db"))
-onboard_conn = can_db.connect(onboard_engine)
+onboard_engine = create_engine(URL.create(drivername="sqlite",database=str(Path(ROOT_DIR).joinpath("resources", "virtual_onboard.db"))))
+onboard_session = Session(onboard_engine)
 
-remote_engine = SQLiteEngine(Path(ROOT_DIR).joinpath("resources", "virtual_remote.db"))
-remote_conn = can_db.connect(remote_engine)
+remote_engine = create_engine(URL.create(drivername="sqlite",database=str(Path(ROOT_DIR).joinpath("resources", "virtual_remote.db"))))
+remote_session = Session(remote_engine)
+
+
 
 # The rows that will be added to the database
 rows = [Row(db, node.name) for node in db.nodes]
@@ -66,7 +69,7 @@ def sender_worker():
     Serializes rows into the queue.
     """
     for row in rows:
-        can_db.create_tables(onboard_conn, row.name, row.signals.items(), onboard_engine)
+        can_db.create_tables(onboard_session, row.name, row.signals.items())
 
     while True:
         sleep(2.0)
@@ -74,7 +77,7 @@ def sender_worker():
             copied = deepcopy(rows)
         for row in copied:
             row.stamp()
-            can_db.add_row(onboard_conn, row.timestamp, row.signals.values(), row.name, onboard_engine)
+            can_db.add_row(onboard_session, row.timestamp, row.signals.values(), row.name, onboard_engine)
             queue.put(row.serialize())
 
 if __name__ == "__main__":
@@ -114,8 +117,8 @@ if __name__ == "__main__":
     # Use the main thread to deserialize rows and update the databse
     # as if it were running on the base station
     for row in rows:
-        can_db.create_tables(remote_conn, row.name, row.signals.items(), remote_engine)
+        can_db.create_tables(remote_session, row.name, row.signals.items())
 
     while True:
         r = Row.deserialize(queue.get())
-        can_db.add_row(remote_conn, r.timestamp, r.signals.values(), r.name, remote_engine)
+        can_db.add_row(remote_session, r.timestamp, r.signals.values(), r.name, remote_engine)
