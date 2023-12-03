@@ -1,5 +1,4 @@
 from typing import cast
-import sqlite3
 from pathlib import Path
 
 import cantools.database

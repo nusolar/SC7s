@@ -14,7 +14,6 @@ from src import ROOT_DIR
 from src.can.row import Row
 from src.util import add_dbc_file, find, unwrap
 from src.can.virtual import start_virtual_can_bus
-# import src.sql
 import src.can_db as can_db
 from sqlalchemy import create_engine, URL
 from sqlalchemy.orm import Session
@@ -34,17 +33,31 @@ add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "motor_controller.dbc"))
 # add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "bms_altered.dbc"))
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--urlonboard', type=str, default=str(URL.create(drivername="sqlite",database=str(Path(ROOT_DIR).joinpath("resources", "virtual_onboard.db")))))
-parser.add_argument('--urlremote', type=str, default=str(URL.create(drivername="sqlite",database=str(Path(ROOT_DIR).joinpath("resources", "virtual_remote.db")))))
+parser.add_argument(
+    "-o",
+    "--onboard-db-url",
+    type=str,
+    default=str(
+        URL.create(drivername="sqlite",database=str(ROOT_DIR.joinpath("resources", "virtual_onboard.db")))
+    )
+)
+
+parser.add_argument(
+    "-r",
+    "--remote-db-url",
+    type=str,
+    default=str(
+        URL.create(drivername="sqlite",database=str(ROOT_DIR.joinpath("resources", "virtual_remote.db")))
+    )
+)
+
 args = parser.parse_args()
 
-onboard_engine = create_engine(args.urlonboard)
+onboard_engine = create_engine(args.onboard_db_url)
 onboard_session = Session(onboard_engine)
 
-remote_engine = create_engine(args.urlremote)
+remote_engine = create_engine(args.remote_db_url)
 remote_session = Session(remote_engine)
-
-
 
 # The rows that will be added to the database
 rows = [Row(db, node.name) for node in db.nodes]

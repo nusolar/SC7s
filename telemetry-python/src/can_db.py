@@ -1,21 +1,18 @@
 # for can_recv_app.py
 # this is the code that only interacts with the database
+from typing import ItemsView
+
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import text
 
-from src.can.row import Row
+from src.can.row import Row, CanValue
 
 # Add queries separately so it's easier to change later on
 
-def create_tables(session: Session, tablename: str, columns):
-    #context manager, when we create database, it gets saved to the ^^ file
+def create_tables(session: Session, tablename: str, columns: ItemsView[str, CanValue]):
+    signal_columns = ",\n".join(f"{k} {'REAL' if v.is_averaged else 'INT'}" for k, v in columns)
 
-    #create a string of question marks depending on # of column values
-    columns = "(timestamp REAL,\n" \
-              + ",\n".join(f"{k} {'REAL' if v.is_averaged else 'INT'}" for k, v in columns) \
-              + ")"
-
-    CREATE_CAN_TABLE = f"""CREATE TABLE IF NOT EXISTS {tablename}\n {columns}"""
+    CREATE_CAN_TABLE = f"CREATE TABLE IF NOT EXISTS {tablename} (timestamp REAL, {signal_columns})"
 
     session.execute(text(CREATE_CAN_TABLE))
                 
