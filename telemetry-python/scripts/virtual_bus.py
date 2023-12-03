@@ -21,6 +21,7 @@ from src.can_db import SQLiteEngine
 from src.can_db import PostgresEngine
 
 store_data = True;
+should_display = False
 
 import src.car_gui as car_display
 
@@ -37,15 +38,18 @@ power_canvals = {"BusCurrent1": None, "BusCurrent2": None, "BusVoltage1": None,
 # The database used for parsing with cantools
 db = cast(Database, cantools.database.load_file(Path(ROOT_DIR).joinpath("resources", "mppt.dbc")))
 add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "motor_controller.dbc"))
-add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "bms_altered.dbc"))
+# add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "bms_altered.dbc"))
 
 SQLitePath = Path(ROOT_DIR).joinpath('resources', "virtual_bus.db")
 testSQLite = SQLiteEngine(SQLitePath)
-testPostgres = PostgresEngine("localhost", "testing")
+testPostgres = PostgresEngine("localhost", "postgres_testing")
+
+dbEngine = testSQLite
 
 if store_data:
     # Connection
-    conn = can_db.connect(testPostgres)
+    # conn = can_db.connect(testPostgres)
+    conn = can_db.connect(dbEngine)
 
 # The rows that will be added to the database
 rows = [Row(db, node.name) for node in db.nodes]
@@ -96,7 +100,9 @@ def sender_worker():
         for row in copied:
             row.stamp()
             if store_data:
-                can_db.add_row(conn, row.timestamp, row.signals.values(), row.name, testPostgres)
+                can_db.add_row(conn, row.timestamp, row.signals.values(), row.name, dbEngine)
+            print(row.serialize())
+            print("\n")
             queue.put(row.serialize())
 
 if __name__ == "__main__":
@@ -121,7 +127,7 @@ if __name__ == "__main__":
 
     if store_data:
         for row in rows:
-            can_db.create_tables(conn, row.name, row.signals.items(), testPostgres)
+            can_db.create_tables(conn, row.name, row.signals.items(), dbEngine)
         print("ready to receive")
 
     # Start the virtual bus
@@ -139,8 +145,9 @@ if __name__ == "__main__":
     sender.start()
 
     #display
-    root = car_display.CarDisplay()
-    root.mainloop()
+    if should_display:
+        root = car_display.CarDisplay()
+        root.mainloop()
 
     while True: ...
 

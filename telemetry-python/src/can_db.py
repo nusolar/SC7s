@@ -3,11 +3,11 @@
 
 import sqlite3
 import psycopg2
-import pkg_resources, os
+# import pkg_resources, os
 from dataclasses import dataclass
 from pathlib import Path
-from src import ROOT_DIR
-from typing import Union
+# from src import ROOT_DIR
+# from typing import Union
 
 # Classes for the different databases
 @dataclass
@@ -79,7 +79,12 @@ def create_tables(connection, tablename, columns, dbEngine):
 
 
 def add_row(connection, r_timestamp, r_values, r_name, dbEngine):
-    qmarks = f"(%s, " + ", ".join("%s" for _ in r_values) + ")"
+    match dbEngine:
+        case SQLiteEngine(path):
+            qmarks = f"(?, " + ", ".join("?" for _ in r_values) + ")"
+        case PostgresEngine(host, database):
+            qmarks = f"(%s, " + ", ".join("%s" for _ in r_values) + ")"
+
     vals = [r_timestamp] + [v.value for v in r_values]
     insert_row = f"INSERT INTO {r_name} VALUES\n" + qmarks
 
