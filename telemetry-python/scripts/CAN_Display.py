@@ -108,6 +108,8 @@ def row_accumulator_worker():
                     row.signals[k].update(v)
                     if k in car_display.displayables.keys():
                         car_display.displayables[k] = cast(float, v)
+        else:
+            print("????:", msg)
 
 # TODO: Buffering sucks. Get rid of the need for this (with more space-efficient serialization).
 def buffered_payload(payload: str, chunk_size: int = 256, terminator: str = BUFFERED_XBEE_MSG_END) -> list[str]:
@@ -141,7 +143,6 @@ if __name__ == "__main__":
 
     # Create a thread to read of the bus and maintain the rows
     accumulator = Thread(target=row_accumulator_worker,
-                         args=(can.ThreadSafeBus(channel="can0", bustype="socketcan"),),
                          daemon=True)
 
     # Create a thread to serialize rows as would be necessary with XBees
