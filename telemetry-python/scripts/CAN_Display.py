@@ -9,44 +9,60 @@ import cantools.database
 from cantools.database.can.database import Database
 from cantools.typechecking import SignalDictType
 from digi.xbee.devices import XBeeDevice
+import serial
+import json
 
 from src import ROOT_DIR, BUFFERED_XBEE_MSG_END
 from src.can.row import Row
 from src.util import add_dbc_file, find, unwrap
+from src.can_db import SQLiteEngine
 
 import src.car_gui as car_display
 import src.can_db as can_db
 
+CAN_INTERFACE = "textfile" #canusb, pican, textfile
+
 VIRTUAL_BUS_NAME = "virtbus"
 
-PORT = "/dev/ttyUSB0"
-BAUD_RATE = 9600
-REMOTE_NODE_ID = "Node"
+XBEE_PORT = "/dev/ttyUSB0"
+XBEE_BAUD_RATE = 57600
+REMOTE_NODE_ID = "Router"
+
+SERIAL_PORT = "COM9"
+SERIAL_BAUD_RATE = 500000
+
+MOCK_DATA_FILE = ROOT_DIR.parent.joinpath("example-data", "testInputRaw.txt")
 
 xbee = None
 remote = None
-store_data = False
+store_data = True
 should_send = False
-should_display = True
+should_display = False
 
 # Thread communication globals
 row_lock = Lock()
 
 # The database used for parsing with cantools
-db = cast(Database, cantools.database.load_file(Path(ROOT_DIR).joinpath("resources", "mppt.dbc")))
-add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "motor_controller.dbc"))
-add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "bms_altered.dbc"))
+db = cast(Database, cantools.database.load_file(Path(ROOT_DIR).joinpath("resources", "motor_controller.dbc")))
+# add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "mppt.dbc"))
+# add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "bms_altered.dbc"))
 
 if store_data:
     # Connection
-    conn = can_db.connect("can_sending_db")
-
-if store_data:
-    # Connection
-    conn = can_db.connect("can_sending_db")
+    engine = SQLiteEngine(ROOT_DIR.joinpath("resources", "mock_candata2.db"))
+    conn = can_db.connect(engine)
 
 # The rows that will be added to the database
 rows = [Row(db, node.name) for node in db.nodes]
+
+# made this it's own function because how you store the mock data could change
+def parseTextFileLine(line):
+    line = line.replace("\'", "\"")
+    raw = json.loads(line)
+    tag = raw["id"]
+    data = bytearray.fromhex(raw["data"])
+
+    return tag, data
 
 def get_packets(interface) -> iter:
     """Generates CAN Packets."""
@@ -68,6 +84,13 @@ def get_packets(interface) -> iter:
                 tag = msg.arbitration_id
                 data = msg.data
                 yield can.Message(arbitration_id=tag, data=data)
+    elif interface == 'textfile':
+        with open(MOCK_DATA_FILE, 'r') as receiver:
+            bus = receiver.readlines()
+            for msg in bus:
+                (tag, data) = parseTextFileLine(msg)
+                sleep(.1)
+                yield can.Message(arbitration_id=tag, data=data)
     else:
         raise Exception('Invalid interface')
 
@@ -76,7 +99,7 @@ def row_accumulator_worker(bus: can.ThreadSafeBus):
     """
     Observes messages sent on the `bus` and accumulates them in a global row.
     """
-    for msg in get_packets("pican"):
+    for msg in get_packets(CAN_INTERFACE):
         assert msg is not None
 
         row = find(rows, lambda r: r.owns(msg, db))
@@ -115,7 +138,7 @@ def sender_worker():
         for row in copied:
             row.stamp()
             if store_data:
-                can_db.add_row(conn, row.timestamp, row.signals.values(), row.name)
+                can_db.add_row(conn, row.timestamp, row.signals.values(), row.name, engine)
             for chunk in buffered_payload(row.serialize()):
                 print(chunk)
                 print("\n")
@@ -124,7 +147,7 @@ def sender_worker():
 
 def startXbee():
     global xbee, remote
-    xbee = XBeeDevice(PORT, BAUD_RATE)
+    xbee = XBeeDevice(XBEE_PORT, XBEE_BAUD_RATE)
     xbee.open()
 
     remote = xbee.get_network().discover_device(REMOTE_NODE_ID)
@@ -137,12 +160,12 @@ if __name__ == "__main__":
         startXbee()
     if store_data:
         for row in rows:
-            can_db.create_tables(conn, row.name, row.signals.items())
+            can_db.create_tables(conn, row.name, row.signals.items(), engine)
         print("ready to receive")
     # Start the bus
     # Create a thread to read of the bus and maintain the rows
     accumulator = Thread(target=row_accumulator_worker,
-                         args=(can.ThreadSafeBus(channel='can0', bustype='socketcan'),),
+                         args=(can.ThreadSafeBus(channel='virtbus', bustype='virtual'),),
                          daemon=True)
 
     # # Create a thread to serialize rows as would be necessary with XBees

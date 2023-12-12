@@ -53,6 +53,7 @@ def create_tables(connection, tablename, columns, dbEngine):
 def add_row(connection, r_timestamp, r_values, r_name, dbEngine):
     placeholder = "%s" if isinstance(dbEngine, PostgresEngine) else "?"
     qmarks = f"({placeholder}, " + ", ".join(placeholder for _ in r_values) + ")"
+    
     vals = [r_timestamp] + [v.value for v in r_values]
     insert_row = f"INSERT INTO {r_name} VALUES\n" + qmarks
 
