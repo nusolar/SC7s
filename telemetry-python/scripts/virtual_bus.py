@@ -18,7 +18,7 @@ from src.can.virtual import start_virtual_can_bus
 from src.can_db import SQLiteEngine, PostgresEngine
 import src.can_db as can_db
 
-store_data = True;
+store_data = True
 should_display = False
 
 import src.car_gui as car_display
@@ -73,8 +73,9 @@ def sender_worker():
     """
     Serializes rows into the queue.
     """
-    for row in rows:
-        can_db.create_tables(onboard_conn, row.name, row.signals.items(), onboard_engine)
+    if store_data:
+        for row in rows:
+            can_db.create_tables(onboard_conn, row.name, row.signals.items(), onboard_engine)
 
     while True:
         sleep(2.0)
@@ -127,7 +128,7 @@ if __name__ == "__main__":
     if store_data:
         for row in rows:
           can_db.create_tables(remote_conn, row.name, row.signals.items(), remote_engine)
-         print("ready to receive")
+        print("ready to receive")
         
    #display
     if should_display:
