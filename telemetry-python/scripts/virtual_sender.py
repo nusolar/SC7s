@@ -22,15 +22,15 @@ import src.car_gui as car_display
 
 VIRTUAL_BUS_NAME = "virtbus"
 
-PORT = "COM9"
-BAUD_RATE = 9600
+XBEE_PORT = "COM9"
+XBEE_BAUD_RATE = 9600
 REMOTE_NODE_ID = "Node"
 
 xbee = None
 remote = None
 store_data = False
 should_send = False
-should_display = True
+should_display = False
 
 # Thread communication globals
 row_lock = Lock()
@@ -84,7 +84,7 @@ def sender_worker():
 
 def startXbee():
     global xbee, remote
-    xbee = XBeeDevice(PORT, BAUD_RATE)
+    xbee = XBeeDevice(XBEE_PORT, XBEE_BAUD_RATE)
     xbee.open()
 
     remote = xbee.get_network().discover_device(REMOTE_NODE_ID)

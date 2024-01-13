@@ -10,6 +10,8 @@ import cantools.database
 from cantools.database.can.database import Database
 from cantools.typechecking import SignalDictType
 from digi.xbee.devices import XBeeDevice
+import serial
+import json
 
 from sqlalchemy import URL, create_engine
 from sqlalchemy.orm import Session

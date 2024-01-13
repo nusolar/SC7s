@@ -118,7 +118,7 @@ if __name__ == "__main__":
     #
     # Upon reception, the main thread deserializes the row and inserts it into a
     # database table.
-
+    
     # Start the virtual bus
     start_virtual_can_bus(can.ThreadSafeBus(VIRTUAL_BUS_NAME, bustype="virtual"), db)
 
