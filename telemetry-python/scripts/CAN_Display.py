@@ -10,15 +10,36 @@ import cantools.database
 from cantools.database.can.database import Database
 from cantools.typechecking import SignalDictType
 from digi.xbee.devices import XBeeDevice
+
 from sqlalchemy import URL, create_engine
 from sqlalchemy.orm import Session
 import serial
+import json
 
 from src import ROOT_DIR, BUFFERED_XBEE_MSG_END
 from src.can.row import Row
-from src.util import add_dbc_file, find
+from src.util import add_dbc_file, find, unwrap
 import src.car_gui as car_display
 import src.can_db as can_db
+
+CAN_INTERFACE = "textfile" #canusb, pican, textfile
+
+VIRTUAL_BUS_NAME = "virtbus"
+
+XBEE_PORT = "/dev/ttyUSB0"
+XBEE_BAUD_RATE = 57600
+REMOTE_NODE_ID = "Router"
+
+SERIAL_PORT = "COM9"
+SERIAL_BAUD_RATE = 500000
+
+MOCK_DATA_FILE = ROOT_DIR.parent.joinpath("example-data", "testInputRaw.txt")
+
+xbee = None
+remote = None
+store_data = True
+should_send = False
+should_display = False
 
 # Thread communication globals
 row_lock = Lock()
@@ -50,14 +71,6 @@ args = parser.parse_args()
 
 session = Session(create_engine(args.db_url)) if args.store else None
 
-xbee = None
-remote = None
-if args.send:
-    xbee = XBeeDevice(args.port, args.baud_rate)
-    xbee.open()
-    remote = xbee.get_network().discover_device(args.remote_node_id)
-    assert remote is not None
-
 # The rows that will be added to the database
 rows = [Row(db, node.name) for node in db.nodes]
 
@@ -71,7 +84,20 @@ class PicanInterface:
     channel: str = "can0"
     bustype: str = "socketcan"
 
-def get_packets(interface: CanusbInterface | PicanInterface) -> Generator[can.Message, None, None]:
+@dataclass
+class TextFileInterface:
+    pass
+
+# made this it's own function because how you store the mock data could change
+def parseTextFileLine(line):
+    line = line.replace("\'", "\"")
+    raw = json.loads(line)
+    tag = raw["id"]
+    data = bytearray.fromhex(raw["data"])
+
+    return tag, data
+
+def get_packets(interface: CanusbInterface | PicanInterface | TextFileInterface) -> Generator[can.Message, None, None]:
     """Generates CAN Packets."""
     match interface:
         case CanusbInterface(port, baud_rate):
@@ -92,8 +118,16 @@ def get_packets(interface: CanusbInterface | PicanInterface) -> Generator[can.Me
                     tag = msg.arbitration_id
                     data = msg.data
                     yield can.Message(arbitration_id=tag, data=data)
+        
+        case TextFileInterface():
+            with open(MOCK_DATA_FILE, 'r') as receiver:
+                bus = receiver.readlines()
+                for msg in bus:
+                    (tag, data) = parseTextFileLine(msg)
+                    sleep(.1)
+                    yield can.Message(arbitration_id=tag, data=data)
 
-def row_accumulator_worker():
+def row_accumulator_worker(bus: can.ThreadSafeBus):
     """
     Observes messages sent on the `bus` and accumulates them in a global row.
     """
@@ -134,6 +168,14 @@ def sender_worker():
                 if xbee is not None:
                     xbee.send_data(remote, chunk)
 
+def startXbee():
+    global xbee, remote
+    xbee = XBeeDevice(XBEE_PORT, XBEE_BAUD_RATE)
+    xbee.open()
+
+    remote = xbee.get_network().discover_device(REMOTE_NODE_ID)
+    assert remote is not None
+
 # Displays the car gui, receives can data, stores it, and sends it over the xbees
 if __name__ == "__main__":
     if session is not None:
@@ -143,6 +185,7 @@ if __name__ == "__main__":
 
     # Create a thread to read of the bus and maintain the rows
     accumulator = Thread(target=row_accumulator_worker,
+                         args=(can.ThreadSafeBus(channel='virtbus', bustype='virtual'),),
                          daemon=True)
 
     # Create a thread to serialize rows as would be necessary with XBees
