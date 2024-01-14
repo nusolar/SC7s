@@ -55,7 +55,7 @@ def row_accumulator_worker(bus: can.ThreadSafeBus):
             for k, v in decoded.items():
                 row.signals[k].update(v)
                 car_display.displayables[k] = v
-                print(car_display.displayables)
+                #print(car_display.displayables)
 
 def sender_worker():
     """

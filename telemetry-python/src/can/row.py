@@ -70,24 +70,24 @@ class Row:
         if self.timestamp is None:
             raise Exception("Attempt to serialize unstamped row")
 
-        #Create a dictionary of signals with the keys sorted and replaced by numbers
-        signals = {k: v.fetch() for k, v in self.signals.items()}
+        #Create a sorted array from the signal made out of the values of the keys in each signal sorted by key alphabetically
+        signals = {k: v.fetch() for k, v in self.signals.items()}       
         sig_keys = list(signals.keys())
         sig_keys.sort()
-        signals = {i:signals[sig_keys[i]] for i in range(len(sig_keys))}
-
-        #Serialize using row data using msgpack
+        signals = [signals[sig_keys[i]] for i in range(len(sig_keys))]
+        #Serialize row data using msgpack
         return msgpack.packb(
-            {"timestamp": self.timestamp, "name": self.name, "signals": signals},
+            [self.timestamp, self.name, *signals],
             use_bin_type=True
         ) # type: ignore
 
     @classmethod
     def deserialize(cls, s: str, db: Database) -> Row:
-        #Deserialize data using message pack and replace number keys by name of keys depending on device name using a text file 
+        #Deserialize data using message pack and create signal dictionary by giving values in array a named key according to their position in array 
         d = msgpack.unpackb(s, raw=False, strict_map_key=False)
-        keys = Row.sorted_signal_names(d["name"], db)
-        vals = list(d['signals'].values())
+        #Get keys of device from dbc file
+        keys = Row.sorted_signal_names(d[1], db)
+        vals = d[2:]
         d_sig = {keys[i]:vals[i] for i in range(len(vals))}
         signals = {k: CanValue(v) for k, v in d_sig.items()}
-        return Row(signals, d["name"], timestamp=d["timestamp"])
+        return Row(signals, d[1], timestamp=d[0])
