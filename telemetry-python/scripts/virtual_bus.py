@@ -122,7 +122,7 @@ if __name__ == "__main__":
     # Start the virtual bus
     start_virtual_can_bus(can.ThreadSafeBus(VIRTUAL_BUS_NAME, bustype="virtual"), db)
 
-    # Create a thread to read of the bus and maintain the rows
+    # Create a thread to read off the bus and maintain the rows
     accumulator = Thread(target=row_accumulator_worker,
                          args=(can.ThreadSafeBus(VIRTUAL_BUS_NAME, bustype='virtual'),),
                          daemon=True)

@@ -4,6 +4,7 @@ from threading import Thread, Lock
 from copy import deepcopy
 from dataclasses import dataclass
 import argparse
+from pathlib import Path
 
 import can
 import cantools.database
@@ -20,13 +21,9 @@ import json
 
 from src import ROOT_DIR, BUFFERED_XBEE_MSG_END
 from src.can.row import Row
-from src.util import add_dbc_file, find, unwrap
+from src.util import add_dbc_file, find
 import src.car_gui as car_display
 import src.can_db as can_db
-
-CAN_INTERFACE = "textfile" #canusb, pican, textfile
-
-VIRTUAL_BUS_NAME = "virtbus"
 
 XBEE_PORT = "/dev/ttyUSB0"
 XBEE_BAUD_RATE = 57600
@@ -88,7 +85,9 @@ class PicanInterface:
 
 @dataclass
 class TextFileInterface:
-    pass
+    file: Path
+
+Inteface = CanusbInterface | PicanInterface | TextFileInterface
 
 # made this it's own function because how you store the mock data could change
 def parseTextFileLine(line):
@@ -99,7 +98,7 @@ def parseTextFileLine(line):
 
     return tag, data
 
-def get_packets(interface: CanusbInterface | PicanInterface | TextFileInterface) -> Generator[can.Message, None, None]:
+def get_packets(interface: Inteface) -> Generator[can.Message, None, None]:
     """Generates CAN Packets."""
     match interface:
         case CanusbInterface(port, baud_rate):
@@ -121,19 +120,19 @@ def get_packets(interface: CanusbInterface | PicanInterface | TextFileInterface)
                     data = msg.data
                     yield can.Message(arbitration_id=tag, data=data)
         
-        case TextFileInterface():
-            with open(MOCK_DATA_FILE, 'r') as receiver:
+        case TextFileInterface(file):
+            with file.open("r") as receiver:
                 bus = receiver.readlines()
                 for msg in bus:
                     (tag, data) = parseTextFileLine(msg)
                     sleep(.1)
                     yield can.Message(arbitration_id=tag, data=data)
 
-def row_accumulator_worker(bus: can.ThreadSafeBus):
+def row_accumulator_worker(interface: Inteface):
     """
     Observes messages sent on the `bus` and accumulates them in a global row.
     """
-    for msg in get_packets(PicanInterface()):
+    for msg in get_packets(interface):
         assert msg is not None
 
         row = find(rows, lambda r: r.owns(msg, db))
@@ -183,11 +182,12 @@ if __name__ == "__main__":
     if session is not None:
         for row in rows:
             can_db.create_tables(session, row.name, row.signals.items())
-        print("====================Ready====================")
 
-    # Create a thread to read of the bus and maintain the rows
+    print("====================Ready====================")
+
+    # Create a thread to read off the bus and maintain the rows
     accumulator = Thread(target=row_accumulator_worker,
-                         args=(can.ThreadSafeBus(channel='virtbus', bustype='virtual'),),
+                         args=(TextFileInterface(MOCK_DATA_FILE),),
                          daemon=True)
 
     # Create a thread to serialize rows as would be necessary with XBees
