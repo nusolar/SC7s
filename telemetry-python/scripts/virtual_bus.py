@@ -14,12 +14,10 @@ from src import ROOT_DIR
 from src.can.row import Row
 from src.util import add_dbc_file, find, unwrap
 from src.can.virtual import start_virtual_can_bus
-# import src.sql
-from src.can_db import SQLiteEngine, PostgresEngine
 import src.can_db as can_db
-
-store_data = True
-should_display = False
+from sqlalchemy import create_engine, URL
+from sqlalchemy.orm import Session
+import argparse
 
 import src.car_gui as car_display
 
@@ -34,16 +32,32 @@ db = cast(Database, cantools.database.load_file(Path(ROOT_DIR).joinpath("resourc
 add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "motor_controller.dbc"))
 # add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "bms_altered.dbc"))
 
-# testPostgres = PostgresEngine("localhost", "postgres_testing")
-onboard_engine = SQLiteEngine(Path(ROOT_DIR).joinpath("resources", "virtual_onboard.db"))
-remote_engine = SQLiteEngine(Path(ROOT_DIR).joinpath("resources", "virtual_remote.db"))
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "-o",
+    "--onboard-db-url",
+    type=str,
+    default=str(
+        URL.create(drivername="sqlite",database=str(ROOT_DIR.joinpath("resources", "virtual_onboard.db")))
+    )
+)
 
-# dbEngine = testSQLite
+parser.add_argument(
+    "-r",
+    "--remote-db-url",
+    type=str,
+    default=str(
+        URL.create(drivername="sqlite",database=str(ROOT_DIR.joinpath("resources", "virtual_remote.db")))
+    )
+)
 
-if store_data:
-    # Connection
-    onboard_conn = can_db.connect(onboard_engine)
-    remote_conn = can_db.connect(remote_engine)
+args = parser.parse_args()
+
+onboard_engine = create_engine(args.onboard_db_url)
+onboard_session = Session(onboard_engine)
+
+remote_engine = create_engine(args.remote_db_url)
+remote_session = Session(remote_engine)
 
 # The rows that will be added to the database
 rows = [Row(db, node.name) for node in db.nodes]
@@ -73,9 +87,8 @@ def sender_worker():
     """
     Serializes rows into the queue.
     """
-    if store_data:
-        for row in rows:
-            can_db.create_tables(onboard_conn, row.name, row.signals.items(), onboard_engine)
+    for row in rows:
+        can_db.create_tables(onboard_session, row.name, row.signals.items())
 
     while True:
         sleep(2.0)
@@ -83,10 +96,7 @@ def sender_worker():
             copied = deepcopy(rows)
         for row in copied:
             row.stamp()
-            if store_data:
-                can_db.add_row(onboard_conn, row.timestamp, row.signals.values(), row.name, onboard_engine)
-            print(row.serialize())
-            print("\n")
+            can_db.add_row(onboard_session, row)
             queue.put(row.serialize())
 
 if __name__ == "__main__":
@@ -112,7 +122,7 @@ if __name__ == "__main__":
     # Start the virtual bus
     start_virtual_can_bus(can.ThreadSafeBus(VIRTUAL_BUS_NAME, bustype="virtual"), db)
 
-    # Create a thread to read of the bus and maintain the rows
+    # Create a thread to read off the bus and maintain the rows
     accumulator = Thread(target=row_accumulator_worker,
                          args=(can.ThreadSafeBus(VIRTUAL_BUS_NAME, bustype='virtual'),),
                          daemon=True)
@@ -125,17 +135,9 @@ if __name__ == "__main__":
 
     # Use the main thread to deserialize rows and update the databse
     # as if it were running on the base station
-    if store_data:
-        for row in rows:
-          can_db.create_tables(remote_conn, row.name, row.signals.items(), remote_engine)
-        print("ready to receive")
-        
-   #display
-    if should_display:
-        root = car_display.CarDisplay()
-        root.mainloop()
+    for row in rows:
+        can_db.create_tables(remote_session, row.name, row.signals.items())
 
     while True:
         r = Row.deserialize(queue.get())
-        if store_data:
-          can_db.add_row(remote_conn, r.timestamp, r.signals.values(), r.name, remote_engine)
+        can_db.add_row(remote_session, r)

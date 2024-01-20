@@ -14,6 +14,7 @@ dependencies = [
     "cantools",
     "python-can",
     "digi-xbee",
-    "psycopg2"
+    "psycopg2",
+    "SQLAlchemy"
 ]
 
