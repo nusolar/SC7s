@@ -8,6 +8,8 @@ from pathlib import Path
 from cantools.database.can.database import Database
 import can.message
 
+from src.util import find
+
 class CanValue:
     """
     CAN value object, which manages the common occurence of getting multiple
@@ -56,8 +58,11 @@ class Row:
             raise Exception("Unknown type of sigdef: {type(sigdef)}")
 
     def owns(self, msg: can.message.Message, db: Database) -> bool:
-        senders = next(m for m in db.messages if m.frame_id == msg.arbitration_id).senders
-        return self.name in senders
+        found = find(db.messages, lambda m:  m.frame_id == msg.arbitration_id)
+        if found is None:
+            return False
+
+        return self.name in found.senders
 
     def stamp(self):
         self.timestamp = datetime.now().timestamp()

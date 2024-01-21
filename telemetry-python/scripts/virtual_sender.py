@@ -18,18 +18,21 @@ from src.can.row import Row
 from src.can.virtual import start_virtual_can_bus
 from src.util import add_dbc_file, find, unwrap
 
+import src.car_gui as car_display
 
 VIRTUAL_BUS_NAME = "virtbus"
 
-PORT = "/dev/ttyUSB1"
-BAUD_RATE = 9600
+
+XBEE_PORT = "COM9"
+XBEE_BAUD_RATE = 9600
+
 REMOTE_NODE_ID = "Node"
 
-xbee = XBeeDevice(PORT, BAUD_RATE)
-xbee.open()
-
-remote = xbee.get_network().discover_device(REMOTE_NODE_ID)
-assert remote is not None
+xbee = None
+remote = None
+store_data = False
+should_send = False
+should_display = False
 
 # Thread communication globals
 row_lock = Lock()
@@ -56,6 +59,10 @@ def row_accumulator_worker(bus: can.ThreadSafeBus):
         with row_lock:
             for k, v in decoded.items():
                 row.signals[k].update(v)
+                if k in car_display.displayables.keys():
+                        car_display.displayables[k] = v
+                        if not should_send:
+                            print(car_display.displayables)
 
 # TODO: Buffering sucks. Get rid of the need for this (with more space-efficient serialization).
 def buffered_payload(payload: str, chunk_size: int = 256, terminator: str = BUFFERED_XBEE_MSG_END) -> list[str]:
@@ -81,7 +88,17 @@ def sender_worker():
                 print("\n")
                 xbee.send_data(remote, chunk)
 
+def startXbee():
+    global xbee, remote
+    xbee = XBeeDevice(XBEE_PORT, XBEE_BAUD_RATE)
+    xbee.open()
+
+    remote = xbee.get_network().discover_device(REMOTE_NODE_ID)
+    assert remote is not None
+
 if __name__ == "__main__":
+    if should_send:
+        startXbee()
     # Start the virtual bus
     start_virtual_can_bus(can.ThreadSafeBus(VIRTUAL_BUS_NAME, bustype="virtual"), db)
 
@@ -96,6 +113,11 @@ if __name__ == "__main__":
     # Start the threads
     accumulator.start()
     sender.start()
+
+    #display
+    if should_display:
+        root = car_display.CarDisplay()
+        root.mainloop()
 
     # Spin forever.
     while True: ...
