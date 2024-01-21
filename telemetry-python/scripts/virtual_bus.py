@@ -141,5 +141,5 @@ if __name__ == "__main__":
         can_db.create_tables(remote_session, row.name, row.signals.items())
 
     while True:
-        r = Row.deserialize(queue.get())
+        r = Row.deserialize(queue.get(), db)
         can_db.add_row(remote_session, r)
