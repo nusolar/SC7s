@@ -1,51 +1,17 @@
 from typing import cast, Literal
-from pathlib import Path
-import threading
 
 from tkinter import *
 from tkinter import ttk
-from tkinter import font as tkFont
-import can
-import cantools.database
-from cantools.database.can.database import Database
-from cantools.typechecking import SignalDictType
-import serial
-
-from src import ROOT_DIR
-from src.can.virtual import start_virtual_can_bus
-from src.util import add_dbc_file
-
-VIRTUAL_BUS_NAME = "virtual"
-
-CAN_INTERFACE: Literal["virtual"] | Literal["canusb"] | Literal["pican"] = "virtual"
-SERIAL_PORT = "/dev/ttyUSB0"
-SERIAL_BAUD_RATE = 500000
-
-
-#import gps frame that's in same folder
-# import gps_display
 
 WIDTH = 500
 HEIGHT = 300
 BCK_COLOR = "#381b4d" #dark purple
 FG_COLOR = "#ebebeb" #silver
-CANUSB_PORT = '/dev/ttyUSB0'
 
 # CAN names to their values, global because it is accessed by multiple
 # threads. Initialized with the names for the values we choose to display.
 # For now these are dummy values.
 # Displayables
-# displayables_orig = {"VehicleVelocity": 0.0, 
-#                 "Pack_SOC": 0.0, 
-#                 "bbox_avgtemp": 0.0,
-#                 "bbox_maxtemp": 0.0,
-#                 "Output_current": 0.0,
-#                 "Avg_Opencell_Voltage": 0.0,
-#                 "regen_enabled": 0.0,
-#                 "Odometer": 0.0,
-#                 "vehicle_direction": 0.0,
-#                 "MotorTemp": 0.0
-# }
 
 displayables = {"VehicleVelocity": 0.0, 
                 "Pack_SOC": 0.0,
