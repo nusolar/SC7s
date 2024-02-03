@@ -39,6 +39,7 @@ def process_message(message: XBeeMessage) -> None:
         received.clear()
         r = Row.deserialize(s)
         can_db.add_row(conn, r)
+
     else:
         received.append(s)
 

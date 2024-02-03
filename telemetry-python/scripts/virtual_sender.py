@@ -22,8 +22,10 @@ import src.car_gui as car_display
 
 VIRTUAL_BUS_NAME = "virtbus"
 
+
 XBEE_PORT = "COM9"
 XBEE_BAUD_RATE = 9600
+
 REMOTE_NODE_ID = "Node"
 
 xbee = None
@@ -64,7 +66,7 @@ def row_accumulator_worker(bus: can.ThreadSafeBus):
 
 # TODO: Buffering sucks. Get rid of the need for this (with more space-efficient serialization).
 def buffered_payload(payload: str, chunk_size: int = 256, terminator: str = BUFFERED_XBEE_MSG_END) -> list[str]:
-        payload += terminator
+        payload += bytes(terminator, 'utf-8')
         return [payload[i:i + chunk_size] for i in range(0, len(payload), chunk_size)]
 
 def sender_worker():
@@ -77,7 +79,11 @@ def sender_worker():
             copied = deepcopy(rows)
         for row in copied:
             row.stamp()
-            for chunk in buffered_payload(row.serialize()):
+            data = row.serialize()
+            data = buffered_payload(data)
+            if len(data) > 256:
+                print(f"Lenght of data is {len(data)}. BUFFERING...")
+            for chunk in data:
                 print(chunk)
                 print("\n")
                 xbee.send_data(remote, chunk)

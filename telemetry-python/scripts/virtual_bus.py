@@ -30,6 +30,7 @@ queue: Queue[str] = Queue()
 # The database used for parsing with cantools
 db = cast(Database, cantools.database.load_file(Path(ROOT_DIR).joinpath("resources", "mppt.dbc")))
 add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "motor_controller.dbc"))
+
 # add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "bms_altered.dbc"))
 
 parser = argparse.ArgumentParser()
@@ -77,6 +78,7 @@ def row_accumulator_worker(bus: can.ThreadSafeBus):
         decoded = cast(SignalDictType, db.decode_message(msg.arbitration_id, msg.data))
         with row_lock:
             for k, v in decoded.items():
+
                 v = cast(float, v)
 
                 row.signals[k].update(v)
@@ -139,5 +141,5 @@ if __name__ == "__main__":
         can_db.create_tables(remote_session, row.name, row.signals.items())
 
     while True:
-        r = Row.deserialize(queue.get())
+        r = Row.deserialize(queue.get(), db)
         can_db.add_row(remote_session, r)
