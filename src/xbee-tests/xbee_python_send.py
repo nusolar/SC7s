@@ -22,18 +22,20 @@ def setup_xbee():
 
     if remote is None:
         #print("Coudn't connect to %s", remote.get_64bit_addr())
-        raise Exception("Coudn't connect to %s", remote.get_64bit_addr())
+        raise Exception("Coudn't connect")
 
 def send_message(message):
     setup_xbee()
     device.send_data(remote, message)
-    print(f"Sending to {remote.get_64bit_addr()} >> {message}")
+    if remote is not None:
+        print(f"Sending to {remote.get_64bit_addr()} >> {message}")
     device.close()
 
 def send_in_loop():
     setup_xbee()
     DATA_TO_SEND = 0
-    print(f"to {remote.get_64bit_addr()}")
+    if remote is not None:
+        print(f"to {remote.get_64bit_addr()}")
     tries = 0
 
     while True:
