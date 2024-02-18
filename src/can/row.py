@@ -66,8 +66,8 @@ class Row:
         self.timestamp = datetime.now().timestamp()
 
     @staticmethod
-    def sorted_signal_names(node_name: str, db: Database) -> list[str]:
-        return sorted([s.name for m in db.messages if node_name in m.senders for s in m.signals])
+    def signal_names(node_name: str, db: Database) -> list[str]:
+        return [s.name for m in db.messages if node_name in m.senders for s in m.signals]
 
 
     def serialize(self) -> str:
@@ -88,13 +88,11 @@ class Row:
             raise Exception("Attempt to serialize unstamped row")
 
         #Create a sorted array from the signal made out of the values of the keys in each signal sorted by key alphabetically
-        signals = {k: v.fetch() for k, v in self.signals.items()}       
-        sig_keys = list(signals.keys())
-        sig_keys.sort()
-        signals = [signals[sig_keys[i]] for i in range(len(sig_keys))]
+        signals = [v.fetch() for v in self.signals.values()]
+
         #Serialize row data using msgpack
         return msgpack.packb(
-            [self.timestamp, self.name, *signals],
+            [self.timestamp, self.name, signals],
             use_bin_type=True
         ) # type: ignore
 
@@ -117,11 +115,10 @@ class Row:
         """
         #Deserialize data using message pack and create signal dictionary by
         # giving values in array a named key according to their position in array 
-        d = msgpack.unpackb(s, raw=False, strict_map_key=False)
+        timestamp, name, values = msgpack.unpackb(s, raw=False, strict_map_key=False)
 
         #Get keys of device from dbc file
-        keys = Row.sorted_signal_names(d[1], db)
-        vals = d[2:]
-        d_sig = { keys[i]:vals[i] for i in range(len(vals)) }
+        keys = Row.signal_names(name, db)
+        d_sig = { keys[i]:values[i] for i in range(len(values)) }
         signals = { k: CanValue(v) for k, v in d_sig.items() }
-        return Row(signals, d[1], timestamp=d[0])
+        return Row(signals, name, timestamp)

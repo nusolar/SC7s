@@ -30,7 +30,7 @@ class TestCANSerialization(unittest.TestCase):
         device_addresses = [n.name for n in db.nodes]
 
         for name in device_addresses:
-            keys = Row.sorted_signal_names(name, db)
+            keys = Row.signal_names(name, db)
             signals = {k: CanValue(random.uniform(0, 15)) for k in keys}
 
             row = Row(signals, name, self.timestamp)

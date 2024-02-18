@@ -62,7 +62,7 @@ def process_message(message: XBeeMessage) -> None:
         received.clear()
 
         try:
-            r = Row.deserialize(s)
+            r = Row.deserialize(s, db)
         except:
             raise Exception("Error deserializing row")
 

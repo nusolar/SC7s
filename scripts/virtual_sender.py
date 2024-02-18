@@ -60,13 +60,13 @@ def row_accumulator_worker(bus: can.ThreadSafeBus):
             for k, v in decoded.items():
                 row.signals[k].update(v)
                 if k in car_display.displayables.keys():
-                        car_display.displayables[k] = v
+                        car_display.displayables[k] = cast(float, v)
                         if not should_send:
                             print(car_display.displayables)
 
 # TODO: Buffering sucks. Get rid of the need for this (with more space-efficient serialization).
 def buffered_payload(payload: str, chunk_size: int = 256, terminator: str = BUFFERED_XBEE_MSG_END) -> list[str]:
-        payload += bytes(terminator, 'utf-8')
+        payload += terminator
         return [payload[i:i + chunk_size] for i in range(0, len(payload), chunk_size)]
 
 def sender_worker():
@@ -86,6 +86,7 @@ def sender_worker():
             for chunk in data:
                 print(chunk)
                 print("\n")
+                assert xbee is not None
                 xbee.send_data(remote, chunk)
 
 def startXbee():
