@@ -139,14 +139,14 @@ class HomeFrame(Frame):
         #font styles
         info_font = ("Helvetica", 20, "bold")
         vel_font = ("Helvetica", 160, "bold", "italic")
-
+        custom_font = tkFont.Font(family=vel_font[0], size=vel_font[1], weight=vel_font[2], slant=vel_font[3])
         #velocity label
         speed_label = ttk.Label(self.mainframe, textvariable=self.speed,
-            font=vel_font, background=BCK_COLOR, foreground=FG_COLOR)
+            font=custom_font, background=BCK_COLOR, foreground=FG_COLOR)
         speed_label.grid(column=0, row=0, sticky=S)
 
         #mph label
-        units_label = ttk.Label(self.mainframe, text="MPH", font=("Helvetica", 30, "bold", "italic"),
+        units_label = ttk.Label(self.mainframe, text="MPH", font=custom_font,
             background=BCK_COLOR, foreground=FG_COLOR)
         units_label.grid(column=0, row=1, sticky=N, padx=(0, 300))
 
@@ -218,7 +218,7 @@ class HomeFrame(Frame):
         
         #set color
         for child in self.info_frame.winfo_children():
-            child.configure(background=BCK_COLOR, foreground=FG_COLOR)
+            child.configure(background=BCK_COLOR, foreground=FG_COLOR) # type: ignore
 
         #space out columns
         for ii in range(2):
@@ -242,16 +242,16 @@ class HomeFrame(Frame):
 
 
     def updater(self):
-        self.speed.set(round(displayables["VehicleVelocity"], 3))
-        self.bbox_charge.set(round(displayables["Pack_SOC"], 3))
+        self.speed.set(round(displayables["VehicleVelocity"], 3)) # type: ignore
+        self.bbox_charge.set(round(displayables["Pack_SOC"], 3)) # type: ignore
         # self.bbox_avgtemp.set(round(displayables["bbox_avgtemp"], 3))
         # self.bbox_maxtemp.set(round(displayables["bbox_maxtemp"], 3))
-        self.mppt_current.set(str(round(displayables["Output_current"], 3)))
-        self.bboxvolt.set(round(displayables["Avg_Opencell_Voltage"], 3))
+        self.mppt_current.set(str(round(displayables["Output_current"], 3))) #type: ignore
+        self.bboxvolt.set(round(displayables["Avg_Opencell_Voltage"], 3)) #type: ignore 
         # self.regen_enabled.set(round(displayables["regen_enabled"], 3))
         # self.odometer.set(round(displayables["Odometer"], 3))
         # self.vehicle_direction.set(round(displayables["vehicle_direction"], 3))
-        self.motorc_temp.set(round(displayables["MotorTemp"], 3))
+        self.motorc_temp.set(round(displayables["MotorTemp"], 3)) #type: ignore 
 
         self.after(1000, self.updater)
 
