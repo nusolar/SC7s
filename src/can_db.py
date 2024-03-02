@@ -13,7 +13,7 @@ from src.can.row import Row, CanValue
 def create_tables(session: Session, tablename: str, columns: ItemsView[str, CanValue]):
     signal_columns = ",\n".join(f"{k} {'REAL' if v.is_averaged else 'INT'}" for k, v in columns)
 
-    CREATE_CAN_TABLE = f"CREATE TABLE IF NOT EXISTS {tablename} (timestamp REAL, {signal_columns})"
+    CREATE_CAN_TABLE = f"CREATE TABLE IF NOT EXISTS {tablename} (timestamp INT, {signal_columns})"
 
     session.execute(text(CREATE_CAN_TABLE))
                 
@@ -21,6 +21,8 @@ def add_row(session: Session, r: Row):
     vals = ["NULL" if v.value is None else str(v.value) for v in r.signals.values()]
     
     insert_row = f"INSERT INTO {r.name} VALUES ({r.timestamp}, {(','.join(vals))})"
+
+    print(text(insert_row))
     session.execute(text(insert_row))
     session.commit()
 
