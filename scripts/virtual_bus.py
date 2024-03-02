@@ -29,7 +29,8 @@ queue: Queue[str] = Queue()
  
 # The database used for parsing with cantools
 db = cast(Database, cantools.database.load_file(Path(ROOT_DIR).joinpath("resources", "mppt.dbc")))
-add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "motor_controller.dbc"))
+add_dbc_file(db, ROOT_DIR.joinpath("resources", "motor_controller.dbc"))
+add_dbc_file(db, ROOT_DIR.joinpath("resources", "driver_controls.dbc"))
 
 # add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "bms_altered.dbc"))
 
@@ -84,6 +85,14 @@ def row_accumulator_worker(bus: can.ThreadSafeBus):
                 row.signals[k].update(v)
                 if k in car_display.displayables.keys():
                     car_display.displayables[k] = v
+
+def intruder_worker():
+    while True:
+        user_input = input()
+        if user_input == " ":
+            with row_lock:
+                print(rows[0].signals)
+                
                     
 def sender_worker():
     """
@@ -132,8 +141,11 @@ if __name__ == "__main__":
     # Create a thread to serialize rows as would be necessary with XBees
     sender = Thread(target=sender_worker, daemon=True)
 
+    can_intruder = Thread(target=intruder_worker, daemon=True)
+
     accumulator.start()
     sender.start()
+    can_intruder.start()
 
     # Use the main thread to deserialize rows and update the databse
     # as if it were running on the base station

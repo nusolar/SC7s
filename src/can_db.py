@@ -1,3 +1,4 @@
+
 # for can_recv_app.py
 # this is the code that only interacts with the database
 from typing import ItemsView
