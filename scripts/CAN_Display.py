@@ -47,6 +47,7 @@ row_lock = Lock()
 db = cast(Database, cantools.database.load_file(ROOT_DIR.joinpath("resources", "mppt.dbc")))
 add_dbc_file(db, ROOT_DIR.joinpath("resources", "motor_controller.dbc"))
 add_dbc_file(db, ROOT_DIR.joinpath("resources", "bms_altered.dbc"))
+add_dbc_file(db, ROOT_DIR.joinpath("resources", "driver_controls.dbc"))
 
 parser = argparse.ArgumentParser()
 
@@ -187,7 +188,7 @@ if __name__ == "__main__":
 
     # Create a thread to read off the bus and maintain the rows
     accumulator = Thread(target=row_accumulator_worker,
-                         args=(TextFileInterface(MOCK_DATA_FILE),),
+                         args=(PicanInterface(),),
                          daemon=True)
 
     # Create a thread to serialize rows as would be necessary with XBees

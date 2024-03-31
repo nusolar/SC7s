@@ -161,5 +161,47 @@ def mock_value(node_name: str, signal_name: str) -> float | int:
                 return 0.0
             case _:
                 raise Exception(f"Unknown motor contoller signal name: {signal_name}")
+    elif "DriverControl" in node_name:
+        match signal_name:
+            case "TritiumID":
+                return 943206484
+            case "SerialNumber":
+                return 123456
+            case "SetpointMotorVelocity":
+                return 0.0
+            case "SetpointMotorCurrent":
+                return 0.0
+            case s if "Reserved" in s:
+                return 0
+            case "SetpointBusCurrent":
+                return 0.0
+            case "Unused_1":
+                return 0
+            case "Unused_2":
+                return 0
+            case "ModeReverse":
+                return 0
+            case "ModeNetural":
+                return 0
+            case "ModeRegen":
+                return 0
+            case "ModeDrive":
+                return 0
+            case "IgnitionAccesories":
+                return 0
+            case "IgnitionRun":
+                return 0
+            case "IgnitionStart":
+                return 0
+            case "Brake":
+                return 0
+            case "ChargePort":
+                return 0
+            case "Flags":
+                return 0
+            case "State":
+                return 0
+            case _:
+                raise Exception(f"Unknown driver controls signal name: {signal_name}")
     else:
         raise Exception(f"Unknown node: {node_name}")
