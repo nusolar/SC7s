@@ -201,5 +201,7 @@ def mock_value(node_name: str, signal_name: str) -> float | int:
                 return 0
             case "State":
                 return 0
+            case _:
+                raise Exception(f"Unknown driver controls signal name: {signal_name}")
     else:
         raise Exception(f"Unknown node: {node_name}")
