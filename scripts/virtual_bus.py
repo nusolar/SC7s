@@ -110,6 +110,11 @@ def sender_worker():
             can_db.add_row(onboard_session, row)
             queue.put(row.serialize())
 
+def reciever_worker():
+    while True:
+        r = Row.deserialize(queue.get(), db)
+        can_db.add_row(remote_session, r)
+
 if __name__ == "__main__":
     # This program simulates CAN bus traffic, onboard CAN frame parsing, and XBee data
     # transfer via multiple threads.
@@ -141,17 +146,19 @@ if __name__ == "__main__":
     # Create a thread to serialize rows as would be necessary with XBees
     sender = Thread(target=sender_worker, daemon=True)
 
+    receiver = Thread(target=reciever_worker, daemon=True)
+
     can_intruder = Thread(target=intruder_worker, daemon=True)
 
     accumulator.start()
     sender.start()
     can_intruder.start()
+    receiver.start()
 
     # Use the main thread to deserialize rows and update the databse
     # as if it were running on the base station
     for row in rows:
         can_db.create_tables(remote_session, row.name, row.signals.items())
 
-    while True:
-        r = Row.deserialize(queue.get(), db)
-        can_db.add_row(remote_session, r)
+    root = car_display.CarDisplay()
+    root.mainloop()

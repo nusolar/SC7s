@@ -22,7 +22,6 @@ def add_row(session: Session, r: Row):
     
     insert_row = f"INSERT INTO {r.name} VALUES ({r.timestamp}, {(','.join(vals))})"
 
-    print(text(insert_row))
     session.execute(text(insert_row))
     session.commit()
 

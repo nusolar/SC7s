@@ -36,9 +36,6 @@ MOCK_DATA_FILE = ROOT_DIR.parent.joinpath("example-data", "testInputRaw.txt")
 
 xbee = None
 remote = None
-store_data = True
-should_send = False
-should_display = False
 
 # Thread communication globals
 row_lock = Lock()
@@ -147,28 +144,23 @@ def row_accumulator_worker(interface: Inteface):
         else:
             print("????:", msg)
 
-# TODO: Buffering sucks. Get rid of the need for this (with more space-efficient serialization).
-def buffered_payload(payload: str, chunk_size: int = 256, terminator: str = BUFFERED_XBEE_MSG_END) -> list[str]:
-        payload += terminator
-        return [payload[i:i + chunk_size] for i in range(0, len(payload), chunk_size)]
-
 def sender_worker():
     """
     Serializes rows into the queue.
     """
+    if session is not None:
+        for row in rows:
+            can_db.create_tables(session, row.name, row.signals.items())
+
     while True:
         sleep(2.0)
         with row_lock:
             copied = deepcopy(rows)
         for row in copied:
             row.stamp()
-            if session is not None:
-                can_db.add_row(session, row)
-            for chunk in buffered_payload(row.serialize()):
-                print(chunk)
-                print("\n")
-                if xbee is not None:
-                    xbee.send_data(remote, chunk)
+            can_db.add_row(session, row)
+            if xbee is not None:
+                xbee.send_data(remote, row.serialize())
 
 def startXbee():
     global xbee, remote
