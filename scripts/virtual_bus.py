@@ -83,16 +83,28 @@ def row_accumulator_worker(bus: can.ThreadSafeBus):
                 v = cast(float, v)
 
                 row.signals[k].update(v)
+
                 if k in car_display.displayables.keys():
                     car_display.displayables[k] = v
 
+
+def force_error(*_) -> None:
+    data = msg.encode(d)
+    bus.send(can.Message(arbitration_id=msg.frame_id, data=data))
+
+    # with row_lock:
+    #     r = unwrap(find(rows, lambda r: r.name == "MPPT_0x600"))
+    #     print(r.signals["Low_array_power"].value)
+    #     r.signals["Low_array_power"].value = 1
+    #     print(r.signals["Low_array_power"].value)
+    
+    # car_display.displayables["Low_array_power"] = 1
+
 def intruder_worker():
     while True:
-        user_input = input()
-        if user_input == " ":
-            with row_lock:
-                print(rows[0].signals)
-                
+        # input()
+        # force_error()
+        ...
                     
 def sender_worker():
     """
@@ -114,6 +126,9 @@ def reciever_worker():
     while True:
         r = Row.deserialize(queue.get(), db)
         can_db.add_row(remote_session, r)
+
+
+        
 
 if __name__ == "__main__":
     # This program simulates CAN bus traffic, onboard CAN frame parsing, and XBee data
@@ -152,8 +167,8 @@ if __name__ == "__main__":
 
     accumulator.start()
     sender.start()
-    can_intruder.start()
     receiver.start()
+    can_intruder.start()
 
     # Use the main thread to deserialize rows and update the databse
     # as if it were running on the base station
@@ -161,4 +176,7 @@ if __name__ == "__main__":
         can_db.create_tables(remote_session, row.name, row.signals.items())
 
     root = car_display.CarDisplay()
+
+    root.bind("<space>", force_error)
+
     root.mainloop()
