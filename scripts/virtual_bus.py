@@ -84,13 +84,11 @@ def row_accumulator_worker(bus: can.ThreadSafeBus):
 
                 row.signals[k].update(v)
 
-                if k in car_display.displayables.keys():
-                    car_display.displayables[k] = v
-
 
 def force_error(*_) -> None:
-    data = msg.encode(d)
-    bus.send(can.Message(arbitration_id=msg.frame_id, data=data))
+    ...
+    # data = msg.encode(d)
+    # bus.send(can.Message(arbitration_id=msg.frame_id, data=data))
 
     # with row_lock:
     #     r = unwrap(find(rows, lambda r: r.name == "MPPT_0x600"))
@@ -175,7 +173,7 @@ if __name__ == "__main__":
     for row in rows:
         can_db.create_tables(remote_session, row.name, row.signals.items())
 
-    root = car_display.CarDisplay()
+    root = car_display.CarDisplay(rows)
 
     root.bind("<space>", force_error)
 

@@ -4,6 +4,9 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import font
 
+from src.can.row import Row
+from src.util import unwrap, find
+
 VIRTUAL_BUS_NAME = "virtual"
 
 CAN_INTERFACE: Literal["virtual"] | Literal["canusb"] | Literal["pican"] = "virtual"
@@ -16,28 +19,12 @@ BCK_COLOR = "#381b4d" #dark purple
 FG_COLOR = "#ebebeb" #silver
 CANUSB_PORT = "/dev/ttyUSB0"
 
-# CAN names to their values, global because it is accessed by multiple
-# threads. Initialized with the names for the values we choose to display.
-# For now these are dummy values.
-displayables = {"VehicleVelocity": 0.0, 
-                "Pack_SOC": 0.0,
-                "Output_current": 0.0,
-                "Avg_Opencell_Voltage": 0.0,
-                "MotorTemp": 0.0,
-                "Odometer": 0.0,
-                "input_power1": 0.0,
-                "input_power2": 0.0,
-                "output_power1": 0.0,
-                "output_power2": 0.0,
-                "Low_array_power": 0,
-}
-
 class CarDisplay(tk.Tk):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, rows: list[Row], *args, **kwargs):
         super().__init__()
         self.title("NU Solar Car")
         self._frame = None
-        self.switchFrame(HomeFrame)
+        self.switchFrame(HomeFrame, rows)
         self.configure(background=BCK_COLOR, padx=15, pady=15)
 
         #Fullscreen
@@ -72,8 +59,8 @@ class CarDisplay(tk.Tk):
         #center window
         self.geometry( "%dx%d+%d+%d" % (WIDTH, HEIGHT, self.MyLeftPos, self.myTopPos))
 
-    def switchFrame(self, frame_class):
-        new_frame = frame_class(self)
+    def switchFrame(self, frame_class, rows: list[Row]):
+        new_frame = frame_class(self, rows)
         if self._frame is not None:
             self._frame.destroy()
         self._frame = new_frame
@@ -82,7 +69,7 @@ class CarDisplay(tk.Tk):
 
 
 class HomeFrame(tk.Frame):
-    def __init__(self, parent):
+    def __init__(self, parent, rows: list[Row]):
         tk.Frame.__init__(self, parent)
         parent.configure(background=BCK_COLOR)
         #all stringvars
@@ -98,7 +85,7 @@ class HomeFrame(tk.Frame):
         self.motorc_temp = tk.StringVar(value= "0.0")
 
         self.create_frames(parent)
-        self.updater()
+        self.updater(rows)
 
 
     def create_frames(self, parent):
@@ -214,21 +201,25 @@ class HomeFrame(tk.Frame):
         self.info_frame.pack(expand=False, fill=tk.BOTH, side=tk.RIGHT, padx=(0, 10))
 
 
-    def updater(self):
+    def updater(self, rows: list[Row]):
         # call the registered callback function
 
-        self.speed.set(round(displayables["VehicleVelocity"], 3)) # type: ignore
-        self.bbox_charge.set(round(displayables["Low_array_power"], 3)) # type: ignore
+        mppt_0x600 = unwrap(find(rows, lambda r: r.name == "MPPT_0x600"))
+        mc_0x400 = unwrap(find(rows, lambda r: r.name == "MOTOR_CONTROLLER_0x400"))
+
+        self.speed.set(round(mc_0x400.signals["VehicleVelocity"].value, 3)) # type: ignore
+        breakpoint()
+        self.bbox_charge.set(round(mppt_0x600.signals["Low_array_power"].value, 3)) # type: ignore
         # self.bbox_avgtemp.set(round(displayables["bbox_avgtemp"], 3))
         # self.bbox_maxtemp.set(round(displayables["bbox_maxtemp"], 3))
-        self.mppt_current.set(str(round(displayables["Output_current"], 3))) #type: ignore
-        self.bboxvolt.set(round(displayables["Avg_Opencell_Voltage"], 3)) #type: ignore 
+        self.mppt_current.set(str(round(mppt_0x600.signals["Output_current"].value, 3))) #type: ignore
+        self.bboxvolt.set(round(mppt_0x600.signals["Avg_Opencell_Voltage"].value, 3)) #type: ignore 
         # self.regen_enabled.set(round(displayables["regen_enabled"], 3))
         # self.odometer.set(round(displayables["Odometer"], 3))
         # self.vehicle_direction.set(round(displayables["vehicle_direction"], 3))
-        self.motorc_temp.set(round(displayables["MotorTemp"], 3)) #type: ignore 
+        self.motorc_temp.set(round(mc_0x400.signals["MotorTemp"].value, 3)) #type: ignore 
 
-        self.after(1000, self.updater)
+        self.after(1000, self.updater, rows)
 
 
 
