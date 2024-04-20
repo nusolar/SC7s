@@ -213,7 +213,7 @@ class HomeFrame(tk.Frame):
         # self.bbox_avgtemp.set(round(displayables["bbox_avgtemp"], 3))
         # self.bbox_maxtemp.set(round(displayables["bbox_maxtemp"], 3))
         self.mppt_current.set(str(round(mppt_0x600.signals["Output_current"].value, 3))) #type: ignore
-        self.bboxvolt.set(round(mppt_0x600.signals["Avg_Opencell_Voltage"].value, 3)) #type: ignore 
+        self.bboxvolt.set(round(mc_0x400.signals["Avg_Opencell_Voltage"].value, 3)) #type: ignore 
         # self.regen_enabled.set(round(displayables["regen_enabled"], 3))
         # self.odometer.set(round(displayables["Odometer"], 3))
         # self.vehicle_direction.set(round(displayables["vehicle_direction"], 3))
