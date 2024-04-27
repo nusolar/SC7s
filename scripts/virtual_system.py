@@ -2,7 +2,6 @@ from typing import cast
 from time import sleep
 from threading import Thread, Lock
 from queue import Queue # threadsafe mpmc queue used to emulate data transfer over XBee
-from pathlib import Path
 from copy import deepcopy
 
 import can
@@ -14,25 +13,23 @@ from src import ROOT_DIR
 from src.can.row import Row
 from src.util import add_dbc_file, find, unwrap
 from src.can.virtual import start_virtual_can_bus
-import src.can_db as can_db
+import src.sql
 from sqlalchemy import create_engine, URL
 from sqlalchemy.orm import Session
 import argparse
 
-import src.car_gui as car_display
+import src.gui
 
 VIRTUAL_BUS_NAME = "virtbus"
 
 # Thread communication globals
 row_lock = Lock()
-queue: Queue[str] = Queue()
+queue: Queue[bytes] = Queue()
  
 # The database used for parsing with cantools
-db = cast(Database, cantools.database.load_file(Path(ROOT_DIR).joinpath("resources", "mppt.dbc")))
+db = cast(Database, cantools.database.load_file(ROOT_DIR.joinpath("resources", "mppt.dbc")))
 add_dbc_file(db, ROOT_DIR.joinpath("resources", "motor_controller.dbc"))
 add_dbc_file(db, ROOT_DIR.joinpath("resources", "driver_controls.dbc"))
-
-# add_dbc_file(db, Path(ROOT_DIR).joinpath("resources", "bms_altered.dbc"))
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -65,7 +62,6 @@ remote_session = Session(remote_engine)
 rows = [Row(db, node.name) for node in db.nodes]
 
 def row_accumulator_worker(bus: can.ThreadSafeBus):
-    global car_display
     """
     Observes messages sent on the `bus` and accumulates them in a global row.
     """
@@ -84,34 +80,15 @@ def row_accumulator_worker(bus: can.ThreadSafeBus):
 
                 row.signals[k].update(v)
 
-                if k in car_display.displayables.keys():
-                    car_display.displayables[k] = v
+                if k in src.gui.displayables.keys():
+                    src.gui.displayables[k] = v
 
-
-def force_error(*_) -> None:
-    data = msg.encode(d)
-    bus.send(can.Message(arbitration_id=msg.frame_id, data=data))
-
-    # with row_lock:
-    #     r = unwrap(find(rows, lambda r: r.name == "MPPT_0x600"))
-    #     print(r.signals["Low_array_power"].value)
-    #     r.signals["Low_array_power"].value = 1
-    #     print(r.signals["Low_array_power"].value)
-    
-    # car_display.displayables["Low_array_power"] = 1
-
-def intruder_worker():
-    while True:
-        # input()
-        # force_error()
-        ...
-                    
 def sender_worker():
     """
     Serializes rows into the queue.
     """
     for row in rows:
-        can_db.create_tables(onboard_session, row.name, row.signals.items())
+        src.sql.create_tables(onboard_session, row.name, row.signals.items())
 
     while True:
         sleep(2.0)
@@ -119,16 +96,14 @@ def sender_worker():
             copied = deepcopy(rows)
         for row in copied:
             row.stamp()
-            can_db.add_row(onboard_session, row)
+            src.sql.add_row(onboard_session, row)
             queue.put(row.serialize())
 
 def reciever_worker():
     while True:
         r = Row.deserialize(queue.get(), db)
-        can_db.add_row(remote_session, r)
+        src.sql.add_row(remote_session, r)
 
-
-        
 
 if __name__ == "__main__":
     # This program simulates CAN bus traffic, onboard CAN frame parsing, and XBee data
@@ -163,20 +138,15 @@ if __name__ == "__main__":
 
     receiver = Thread(target=reciever_worker, daemon=True)
 
-    can_intruder = Thread(target=intruder_worker, daemon=True)
-
     accumulator.start()
     sender.start()
     receiver.start()
-    can_intruder.start()
 
     # Use the main thread to deserialize rows and update the databse
     # as if it were running on the base station
     for row in rows:
-        can_db.create_tables(remote_session, row.name, row.signals.items())
+        src.sql.create_tables(remote_session, row.name, row.signals.items())
 
-    root = car_display.CarDisplay()
-
-    root.bind("<space>", force_error)
+    root = src.gui.CarDisplay()
 
     root.mainloop()

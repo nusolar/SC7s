@@ -19,11 +19,11 @@ from sqlalchemy.orm import Session
 import serial
 import json
 
-from src import ROOT_DIR, BUFFERED_XBEE_MSG_END
+from src import ROOT_DIR
 from src.can.row import Row
 from src.util import add_dbc_file, find
-import src.car_gui as car_display
-import src.can_db as can_db
+import src.gui
+import src.sql
 
 XBEE_PORT = "/dev/ttyUSB0"
 XBEE_BAUD_RATE = 57600
@@ -88,7 +88,7 @@ class TextFileInterface:
 Inteface = CanusbInterface | PicanInterface | TextFileInterface
 
 # made this it's own function because how you store the mock data could change
-def parseTextFileLine(line):
+def parse_text_file_line(line):
     line = line.replace("\'", "\"")
     raw = json.loads(line)
     tag = raw["id"]
@@ -122,7 +122,7 @@ def get_packets(interface: Inteface) -> Generator[can.Message, None, None]:
             with file.open("r") as receiver:
                 bus = receiver.readlines()
                 for msg in bus:
-                    (tag, data) = parseTextFileLine(msg)
+                    (tag, data) = parse_text_file_line(msg)
                     sleep(.1)
                     yield can.Message(arbitration_id=tag, data=data)
 
@@ -139,8 +139,8 @@ def row_accumulator_worker(interface: Inteface):
             with row_lock:
                 for k, v in decoded.items():
                     row.signals[k].update(v)
-                    if k in car_display.displayables.keys():
-                        car_display.displayables[k] = cast(float, v)
+                    if k in src.gui.displayables.keys():
+                        src.gui.displayables[k] = cast(float, v)
         else:
             print("????:", msg)
 
@@ -150,7 +150,7 @@ def sender_worker():
     """
     if session is not None:
         for row in rows:
-            can_db.create_tables(session, row.name, row.signals.items())
+            src.sql.create_tables(session, row.name, row.signals.items())
 
     while True:
         sleep(2.0)
@@ -158,11 +158,12 @@ def sender_worker():
             copied = deepcopy(rows)
         for row in copied:
             row.stamp()
-            can_db.add_row(session, row)
+            if session is not None:
+                src.sql.add_row(session, row)
             if xbee is not None:
                 xbee.send_data(remote, row.serialize())
 
-def startXbee():
+def start_xbee():
     global xbee, remote
     xbee = XBeeDevice(XBEE_PORT, XBEE_BAUD_RATE)
     xbee.open()
@@ -174,7 +175,7 @@ def startXbee():
 if __name__ == "__main__":
     if session is not None:
         for row in rows:
-            can_db.create_tables(session, row.name, row.signals.items())
+            src.sql.create_tables(session, row.name, row.signals.items())
 
     print("====================Ready====================")
 
@@ -192,8 +193,9 @@ if __name__ == "__main__":
 
     # Display
     if args.display:
-        root = car_display.CarDisplay()
+        root = src.gui.CarDisplay()
         root.mainloop()
 
     # Spin forever.
-    while True: ...
+    while True:
+        input()

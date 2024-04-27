@@ -70,7 +70,7 @@ class Row:
         return [s.name for m in db.messages if node_name in m.senders for s in m.signals]
 
 
-    def serialize(self) -> str:
+    def serialize(self) -> bytes:
         """
         Serialize the row to a JSON-formatted string.
 
@@ -97,7 +97,7 @@ class Row:
         ) # type: ignore
 
     @classmethod
-    def deserialize(cls, s: str, db: Database) -> Row:
+    def deserialize(cls, b: bytes, db: Database) -> Row:
         """
         Deserialize a JSON-formatted string into a Row object.
 
@@ -115,7 +115,7 @@ class Row:
         """
         #Deserialize data using message pack and create signal dictionary by
         # giving values in array a named key according to their position in array 
-        timestamp, name, values = msgpack.unpackb(s, raw=False, strict_map_key=False)
+        timestamp, name, values = msgpack.unpackb(b, raw=False, strict_map_key=False)
 
         #Get keys of device from dbc file
         keys = Row.signal_names(name, db)

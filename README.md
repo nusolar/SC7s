@@ -17,23 +17,17 @@ telemetry-python
 ```
 
 The `scripts` directory contains executable python scripts. 
-* `real_bus.py` is a simple CAN parser that reads off a CAN
-  bus and prints the parsed data to the terminal. This is
-  used for testing.
-* `virtual_bus.py` is similar to `real_bus.py`, except the CAN
-  Bus is simulated and data is mocked. This is useful for testing
+* `virtual_system.py` simulates the entire telemetry pipeline without
+  need for a real CAN bus connection or XBees. This is useful for testing
   without connecting to a live CAN bus.
-* `sender.py` parses CAN data from the bus, like `real_bus.py`,
-  but sends the data as JSON from one XBee radio device
-  to another. This program is intended to run onboard the
-  car and send parsed data via XBees to the basestation.
-* `virtual_sender.py` functions similar to `sender.py`, except
-  that, like `virtual_bus.py`, the CAN traffic is simulated.
-* `receiver.py`, running on the basestation, receives
-  parsed data from `sender.py` and stores them in a
+* `onboard.py` parses CAN data from the bus, sends the data as JSON from one
+  XBee radio device to another. This program is intended to run onboard the car
+  and send parsed data via XBees to the basestation.
+* `virtual_onboard.py` functions similar to `onboard.py`, except
+  that, like `virtual_system.py`, the CAN traffic is simulated.
+* `remote.py`, running on the basestation, receives
+  parsed data from `onboard.py` and stores it in a
   database.
-* `solar_car_display.py` monitors CAN data and presents
-  is an onboard dispay to the driver.
 * `dbc_builder.py` provides a way to conveniently create dbc
   files for devices on the CAN bus based off 'abstract' dbc files
   for these devices. It can, for example, create a dbc file for three
