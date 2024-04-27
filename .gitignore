@@ -207,3 +207,8 @@ packages/react-devtools-timeline/dist
 
 # databases
 *.db
+
+/docs/generated
+/docs/Makefile
+/docs/make.bat
+/docs/_*
