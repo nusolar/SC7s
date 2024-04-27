@@ -6,7 +6,6 @@ Usage
 Test
 ------------
 
-.. autosummary::
-   :toctree: generated
-
-   src.can.row
+.. automodule:: src.can.row
+   :members:
+   :undoc-members:
