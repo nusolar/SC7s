@@ -23,6 +23,7 @@ from src import ROOT_DIR, BUFFERED_XBEE_MSG_END
 from src.can.row import Row
 from src.util import add_dbc_file, find
 import src.car_gui as car_display
+import src.gui_test as dial_display
 import src.can_db as can_db
 
 XBEE_PORT = "/dev/ttyUSB0"

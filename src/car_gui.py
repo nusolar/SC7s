@@ -119,9 +119,11 @@ class HomeFrame(tk.Frame):
         speed_label.grid(column=0, row=0, sticky=tk.S)
 
         #mph label
-        units_label = ttk.Label(self.mainframe, text="MPH", font=custom_font,
-            background=BCK_COLOR, foreground=FG_COLOR)
-        units_label.grid(column=0, row=1, sticky=tk.N, padx=(0, 300))
+        meter1 = Meter(radius=900, start=0, end=80, border_width=0, integer=True,
+               fg="black", text_color="white", start_angle=195, end_angle=-210,
+               text_font="DS-Digital 100", scale_color="white", needle_color="purple")
+        meter1.set_mark(60, 81) # set red marking from 60 to 80
+        meter1.grid(row=0, column=1, padx=20, pady=30)
 
 
         #info labels
