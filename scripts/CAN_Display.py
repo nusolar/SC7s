@@ -20,10 +20,10 @@ import serial
 import json
 
 from src import ROOT_DIR, BUFFERED_XBEE_MSG_END
+from src.can.virtual import start_virtual_can_bus
 from src.can.row import Row
 from src.util import add_dbc_file, find
 import src.car_gui as car_display
-import src.gui_test as dial_display
 import src.can_db as can_db
 
 XBEE_PORT = "/dev/ttyUSB0"
@@ -113,7 +113,7 @@ def get_packets(interface: Inteface) -> Generator[can.Message, None, None]:
                     yield can.Message(arbitration_id=tag, data=data)
 
         case PicanInterface(channel, bustype):
-            with can.interface.Bus(channel=channel, bustype=bustype) as bus: # type: ignore
+            with can.ThreadSafeBus(car_display.VIRTUAL_BUS_NAME, bustype="virtual") as bus: # type: ignore
                 for msg in bus:
                     tag = msg.arbitration_id
                     data = msg.data
@@ -190,6 +190,8 @@ if __name__ == "__main__":
     # Start the threads
     accumulator.start()
     sender.start()
+
+    start_virtual_can_bus(can.ThreadSafeBus(car_display.VIRTUAL_BUS_NAME, bustype="virtual"), db)
 
     # Display
     if args.display:

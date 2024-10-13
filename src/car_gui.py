@@ -3,6 +3,7 @@ from typing import Literal
 import tkinter as tk
 from tkinter import ttk
 from tkinter import font
+from tkdial import Meter
 
 VIRTUAL_BUS_NAME = "virtual"
 
@@ -30,6 +31,7 @@ displayables = {"VehicleVelocity": 0.0,
                 "output_power1": 0.0,
                 "output_power2": 0.0,
                 "Low_array_power": 0,
+                "Twelve_V": 0.0
 }
 
 class CarDisplay(tk.Tk):
@@ -86,7 +88,7 @@ class HomeFrame(tk.Frame):
         tk.Frame.__init__(self, parent)
         parent.configure(background=BCK_COLOR)
         #all stringvars
-        self.speed = tk.StringVar(value= "0.0")
+        #self.speed = tk.StringVar(value= "0.0")
         self.bbox_charge = tk.StringVar(value= "0.0")
         # self.bbox_avgtemp = StringVar(value= "0.0")
         # self.bbox_maxtemp = StringVar(value= "0.0")
@@ -98,7 +100,6 @@ class HomeFrame(tk.Frame):
         self.motorc_temp = tk.StringVar(value= "0.0")
 
         self.create_frames(parent)
-        self.updater()
 
 
     def create_frames(self, parent):
@@ -114,17 +115,16 @@ class HomeFrame(tk.Frame):
         vel_font = ("Helvetica", 160, "bold", "italic")
         custom_font = font.Font(family=vel_font[0], size=vel_font[1], weight=vel_font[2], slant=vel_font[3])
         #velocity label
-        speed_label = ttk.Label(self.mainframe, textvariable=self.speed,
-            font=custom_font, background=BCK_COLOR, foreground=FG_COLOR)
-        speed_label.grid(column=0, row=0, sticky=tk.S)
+        # speed_label = ttk.Label(self.mainframe, textvariable=self.speed,
+        #     font=custom_font, background=BCK_COLOR, foreground=FG_COLOR)
+        #speed_label.grid(column=0, row=0, sticky=tk.S)
 
         #mph label
-        meter1 = Meter(radius=900, start=0, end=80, border_width=0, integer=True,
+        self.meter1 = Meter(self.mainframe, radius=1200, start=0, end=80, border_width=0, integer=True,
                fg="black", text_color="white", start_angle=195, end_angle=-210,
                text_font="DS-Digital 100", scale_color="white", needle_color="purple")
-        meter1.set_mark(60, 81) # set red marking from 60 to 80
-        meter1.grid(row=0, column=1, padx=20, pady=30)
-
+        self.meter1.set_mark(60, 81) # set red marking from 60 to 80
+        self.meter1.grid(row=1, column=1, sticky=tk.N, padx= (0,300))
 
         #info labels
         #battery box charge
@@ -215,11 +215,14 @@ class HomeFrame(tk.Frame):
         self.mainframe.pack(expand=True, fill=tk.BOTH, side=tk.LEFT)
         self.info_frame.pack(expand=False, fill=tk.BOTH, side=tk.RIGHT, padx=(0, 10))
 
+        self.updater()
+
 
     def updater(self):
         # call the registered callback function
 
-        self.speed.set(round(displayables["VehicleVelocity"], 3)) # type: ignore
+        #self.speed.set(round(displayables["VehicleVelocity"], 3)) # type: ignore
+        self.meter1.set(displayables["Twelve_V"])
         self.bbox_charge.set(round(displayables["Low_array_power"], 3)) # type: ignore
         # self.bbox_avgtemp.set(round(displayables["bbox_avgtemp"], 3))
         # self.bbox_maxtemp.set(round(displayables["bbox_maxtemp"], 3))

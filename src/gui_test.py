@@ -7,7 +7,7 @@ from src.util import add_dbc_file
 from src.can.virtual import start_virtual_can_bus
 from cantools.typechecking import SignalDictType
 
-import customtkinter
+import tkinter as tk
 import random
 from tkdial import Meter
 from time import sleep
@@ -38,7 +38,7 @@ displayables = {
 #         test_speed += 0.5
 #     app.after(10, update_meter)  # 10 milliseconds delay
 
-app = customtkinter.CTk()
+app = tk.Tk()
 app.geometry("950x950")
 
 meter1 = Meter(app, radius=900, start=0, end=80, border_width=0, integer=True,
