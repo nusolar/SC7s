@@ -23,7 +23,11 @@ import src.gui
 VIRTUAL_BUS_NAME = "virtbus"
 
 # Thread communication globals
+
+# Queueused to safely transfer data (in the form of bytes) between threads in the system, 
+# enabling the sender and receiver threads to communicate asynchronously.
 row_lock = Lock()
+# lock to ensure one thread access data at a time
 queue: Queue[bytes] = Queue()
  
 # The database used for parsing with cantools
@@ -31,6 +35,8 @@ db = cast(Database, cantools.database.load_file(ROOT_DIR.joinpath("resources", "
 add_dbc_file(db, ROOT_DIR.joinpath("resources", "motor_controller.dbc"))
 add_dbc_file(db, ROOT_DIR.joinpath("resources", "driver_controls.dbc"))
 
+# Initiate command line parser and args "-o,", "--onboard-db" -- with default args 
+# Creates path to SQL file and converts path so string format to read SQLite db url
 parser = argparse.ArgumentParser()
 parser.add_argument(
     "-o",
@@ -41,6 +47,14 @@ parser.add_argument(
     )
 )
 
+# -o (onboard-db-url): This argument specifies the URL for the onboard database,
+# which is used to store data collected onboard the vehicle.
+
+# -r (remote-db-url): This argument specifies the URL for the remote database, 
+# which is used to store data received at the base station after it has been transmitted from the vehicle.
+
+# Adds an argument for the remote database URL, with a default path to "virtual_remote.db".
+# If not provided, it defaults to an SQLite database located in the "resources" directory.
 parser.add_argument(
     "-r",
     "--remote-db-url",
@@ -50,17 +64,36 @@ parser.add_argument(
     )
 )
 
+# This line parses the command-line arguments provided by the user.
+# The parser object (created earlier) looks for the arguments -o (onboard-db-url) and -r (remote-db-url),
+# or it uses the default values if they are not provided.
+# The result is stored in args, which is an object containing the parsed arguments.
+
+# For example:
+
+# If the user runs the program like this: python script.py -o "path/to/onboard.db" -r "path/to/remote.db", the args object will contain:
+# args.onboard_db_url = "path/to/onboard.db"
+# args.remote_db_url = "path/to/remote.db"
 args = parser.parse_args()
 
+# onboard_engine is a SQLAlchemy engine object that allows the program to interact with the onboard database 
+# (e.g., running queries, creating tables, etc.).
 onboard_engine = create_engine(args.onboard_db_url)
+
+# Session(): This creates a session object for interacting with the database through the onboard_engine.
 onboard_session = Session(onboard_engine)
+
 
 remote_engine = create_engine(args.remote_db_url)
 remote_session = Session(remote_engine)
 
 # The rows that will be added to the database
+# Creates a list of Row objects, one for each CAN bus node, to store and process their data.
 rows = [Row(db, node.name) for node in db.nodes]
 
+
+# Continuously listens for CAN messages on the bus, finds the corresponding Row for the message,
+# decodes the message into signal values, updates the relevant Row's signals, and updates the GUI display with new values.
 def row_accumulator_worker(bus: can.ThreadSafeBus):
     """
     Observes messages sent on the `bus` and accumulates them in a global row.
@@ -80,25 +113,40 @@ def row_accumulator_worker(bus: can.ThreadSafeBus):
 
                 row.signals[k].update(v)
 
+                #working with GUI
                 if k in src.gui.displayables.keys():
                     src.gui.displayables[k] = v
 
+# The row_accumulator_worker (above) collects and updates CAN message data in real time, 
+# while the sender_worker periodically serializes and sends the accumulated data to a queue 
+# for transmission or storage.
+ 
 def sender_worker():
     """
     Serializes rows into the queue.
     """
+    # Create database tables for each row (CAN node) using the onboard session,
+    # initializing them with the row's name and its signal data.
     for row in rows:
         src.sql.create_tables(onboard_session, row.name, row.signals.items())
 
     while True:
+        # Sleep for 2 seconds between each cycle to simulate periodic sending of data.
         sleep(2.0)
+        
+        # Lock the row data to safely copy it for processing (prevent conflicts with other threads).
         with row_lock:
             copied = deepcopy(rows)
+        
+        # For each copied row, stamp it with a timestamp, add the row to the onboard database,
+        # and serialize it (convert to bytes) before putting it into the queue for transfer.
         for row in copied:
             row.stamp()
-            src.sql.add_row(onboard_session, row)
-            queue.put(row.serialize())
+            src.sql.add_row(onboard_session, row)  # Add the row to the database
+            queue.put(row.serialize())  # Place the serialized row into the queue for sending
 
+# The function below continuously retrieves serialized Row objects from the queue, 
+# deserializes them into usable data, and adds the data to the remote database for storage.
 def reciever_worker():
     while True:
         r = Row.deserialize(queue.get(), db)
