@@ -57,6 +57,7 @@ def send_in_loop():
             setup_xbee()
             tries += 1
 
-print("Starting")
-send_message(DATA_TO_SEND)
-send_in_loop()
+if __name__ == "__main__":
+    print("Starting")
+    send_message(DATA_TO_SEND)
+    send_in_loop()

@@ -1,0 +1,9 @@
+pyserial
+cantools
+python-can
+digi-xbee
+msgpack
+psycopg2
+SQLAlchemy
+Sphinx
+sphinx-rtd-theme
