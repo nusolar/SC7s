@@ -152,6 +152,11 @@ def reciever_worker():
         r = Row.deserialize(queue.get(), db)
         src.sql.add_row(remote_session, r)
 
+# CAN data is collected by the row_accumulator_worker, which updates the rows with decoded signal values.
+# The sender_worker periodically serializes these rows and places the data into a queue. The receiver_worker 
+# retrieves serialized data from the queue, deserializes it, and stores it in the remote database. 
+# This flow allows for real-time data collection, transmission, and storage across different parts of the system.
+
 
 if __name__ == "__main__":
     # This program simulates CAN bus traffic, onboard CAN frame parsing, and XBee data
