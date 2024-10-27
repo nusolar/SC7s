@@ -9,6 +9,17 @@ import cantools.database
 from cantools.database.can.database import Database
 from cantools.typechecking import SignalDictType
 
+import sys
+from pathlib import Path
+
+# Add the parent directory of SC7s to sys.path
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+
+# Print the current Python path for debugging
+#print("Current Python path:", sys.path)
+
+# Try importing src
+import src
 from src import ROOT_DIR
 from src.can.row import Row
 from src.util import add_dbc_file, find, unwrap
