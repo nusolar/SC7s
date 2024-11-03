@@ -18,6 +18,9 @@ from sqlalchemy import URL, create_engine
 from sqlalchemy.orm import Session
 import serial
 import json
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src import ROOT_DIR, BUFFERED_XBEE_MSG_END
 from src.can.virtual import start_virtual_can_bus

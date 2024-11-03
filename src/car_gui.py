@@ -120,7 +120,7 @@ class HomeFrame(tk.Frame):
         #speed_label.grid(column=0, row=0, sticky=tk.S)
 
         #mph label
-        self.meter1 = Meter(self.mainframe, radius=1200, start=0, end=80, border_width=0, integer=True,
+        self.meter1 = Meter(self.mainframe, radius=600, start=0, end=80, border_width=0, integer=True,
                fg="black", text_color="white", start_angle=195, end_angle=-210,
                text_font="DS-Digital 100", scale_color="white", needle_color="purple")
         self.meter1.set_mark(60, 81) # set red marking from 60 to 80

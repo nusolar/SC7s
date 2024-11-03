@@ -18,7 +18,7 @@ displayables = {'VehicleVelocity': 0.0, 'Pack_SOC': 0.0, 'Output_current': 0.0, 
 
 class CarDisplay(ctk.CTk):
 
-    def __init__(self, *args, **kwargs):
+def __init__(self, *args, **kwargs):
         super().__init__()
         self.title('NU Solar Car')
         self._frame = None
