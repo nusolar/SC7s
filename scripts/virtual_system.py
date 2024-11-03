@@ -55,7 +55,7 @@ args = parser.parse_args()
 onboard_engine = create_engine(args.onboard_db_url)
 onboard_session = Session(onboard_engine)
 
-remote_engine = create_engine(args.remote_db_url)
+remote_engine = create_engine("mysql+mysqlconnector://admin:Q&Flash60229@database-1.cti4y4uycxdj.us-east-2.rds.amazonaws.com:3306/photoapp")
 remote_session = Session(remote_engine)
 
 # The rows that will be added to the database
@@ -146,7 +146,8 @@ if __name__ == "__main__":
     # as if it were running on the base station
     for row in rows:
         src.sql.create_tables(remote_session, row.name, row.signals.items())
-
+        print(remote_session)
+        print(row.name)    
     root = src.gui.CarDisplay()
 
     root.mainloop()
