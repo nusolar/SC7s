@@ -66,7 +66,7 @@ args = parser.parse_args()
 onboard_engine = create_engine(args.onboard_db_url)
 onboard_session = Session(onboard_engine)
 
-remote_engine = create_engine("mysql+mysqlconnector://admin:Q&Flash60229@database-1.cti4y4uycxdj.us-east-2.rds.amazonaws.com:3306/photoapp")
+remote_engine = create_engine("mysql+mysqlconnector://'username':'password'@nusolar-database-2024.c324mck68bbo.us-east-2.rds.amazonaws.com:3306/nusolar2024")
 remote_session = Session(remote_engine)
 
 # The rows that will be added to the database
