@@ -11,7 +11,8 @@ from cantools.typechecking import SignalDictType
 
 import sys
 from pathlib import Path
-
+username = ("admin")
+password = str(input("Enter the password for "+username+": "))
 # Add the parent directory of SC7s to sys.path
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
@@ -66,7 +67,7 @@ args = parser.parse_args()
 onboard_engine = create_engine(args.onboard_db_url)
 onboard_session = Session(onboard_engine)
 
-remote_engine = create_engine("mysql+mysqlconnector://'username':'password'@nusolar-database-2024.c324mck68bbo.us-east-2.rds.amazonaws.com:3306/nusolar2024")
+remote_engine = create_engine("mysql+mysqlconnector://"+username+":"+password+"@nusolar-database-2024.c324mck68bbo.us-east-2.rds.amazonaws.com:3306/nusolar2024")
 remote_session = Session(remote_engine)
 
 # The rows that will be added to the database
