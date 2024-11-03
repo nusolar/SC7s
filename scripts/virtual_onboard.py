@@ -16,7 +16,7 @@ from src import ROOT_DIR
 from src.can.row import Row
 from src.can.virtual import start_virtual_can_bus
 from src.util import add_dbc_file, find, unwrap
-
+import pymysql 
 import src.gui
 
 VIRTUAL_BUS_NAME = "virtbus"

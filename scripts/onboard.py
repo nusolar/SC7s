@@ -55,9 +55,11 @@ parser.add_argument(
     "--db-url",
     type=str,
     default=str(
-        URL.create(drivername="sqlite",database=str(ROOT_DIR.joinpath("resources", "can_sending.db")))
+        URL.create(drivername="sqlite",database= "database-1.cti4y4uycxdj.us-east-2.rds.amazonaws.com")
     )
 )
+print("FLAGS FLAG FLAGS")
+print(str(URL.create(drivername= "sqlite", database=str(ROOT_DIR.joinpath("resources","can_sending.db")))))
 parser.add_argument("--serial-port", type=str)
 parser.add_argument("--serial-baud-rate", type=str)
 parser.add_argument("--xbee-port", type=str)
