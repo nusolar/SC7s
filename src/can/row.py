@@ -14,6 +14,9 @@ class CanValue:
     values for a specific CAN tag before wanting to send it, through simple averaging.
     """
     def __init__(self: CanValue, value: Optional[float] = None, is_averaged = True) -> None:
+        """
+        Initializes the CAN value Object.
+        """
         self.value: Optional[int | float] = value
         self.is_averaged = is_averaged
         if value is None:
@@ -22,6 +25,18 @@ class CanValue:
             self.n = 1
 
     def fetch(self: CanValue) -> Optional[int | float]:
+        """
+        Retrieves the CAN value, and if the is_averaged is set to true, resets CAN value.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        ----------
+        int, float
+            value stored in the CAN
+        """
         if not self.is_averaged:
             return self.value
         else:
@@ -31,6 +46,20 @@ class CanValue:
             return save
 
     def update(self: CanValue, value):
+        """
+        Updates the CAN value.
+        If is_averaged is false, updates CAN value by replacing value field.
+        If is_averaged is true, updates CAN value by calculating new average of CAN values.
+
+        Parameters
+        ----------
+        value : int, float, None
+            value to be updated to the CAN
+        
+        Returns
+        ----------
+        None
+        """
         if not self.is_averaged:
             self.value = value
         else:
@@ -41,7 +70,15 @@ class CanValue:
 
 
 class Row:
+    """
+    ROW object, represents a row of CAN signal data, 
+    containing name associated with signals, timestamp of when the row was stamped,
+    and a dictionary mapping each signal name to a CanValue Object
+    """
     def __init__(self, sigdef: Database | dict[str, CanValue], name: str, timestamp: Optional[float] = None) -> None:
+        """
+        Initializes the ROW Object.
+        """
         self.timestamp: Optional[float] = timestamp
         self.name = name
         self.signals: dict[str, CanValue] = {}
@@ -56,6 +93,22 @@ class Row:
             raise Exception("Unknown type of sigdef: {type(sigdef)}")
 
     def owns(self, msg: can.message.Message, db: Database) -> bool:
+        """
+        Checks if the ROW object "owned" or sent a CAN message in the provided database.
+
+        Parameters
+        ----------
+        msg : can.message.Message
+            a CAN message
+        db : Database
+            a database
+
+        Results:
+        ----------
+        bool 
+            true if name of the row matches the sender of the message, else false.
+
+        """
         found = find(db.messages, lambda m:  m.frame_id == msg.arbitration_id)
         if found is None:
             return False
