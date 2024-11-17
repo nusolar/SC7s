@@ -35,6 +35,15 @@ test_counters: dict[str, int] = {}
 def init_counter(node_name: str):
     """
     Initialize test counter for node
+
+    Parameters
+    ----------
+    node_name : str
+        the name of the node being tested
+
+    Returns
+    ----------
+    None
     """
     global test_counters
     test_counters[node_name] = random.randint(0, UINT8_MAX)
@@ -42,6 +51,15 @@ def init_counter(node_name: str):
 def inc_counter(node_name: str) -> int:
     """
     Increment test counter with modular arithmetic.
+
+    Parameters
+    ----------
+    node_name : str
+        the name of the node being incremented
+
+    Returns
+    ----------
+    None
     """
     global test_counters
 
@@ -53,7 +71,19 @@ def inc_counter(node_name: str) -> int:
 # previously.
 def mock_value(node_name: str, signal_name: str) -> float | int:
     """
-    Make a mock value for a signal.
+    Generates a mock value for a signal.
+
+    Parameters
+    ----------
+    node_name : str
+        the name of the node for which the mock value is being created for
+    signal_name : str
+        the name of the signal for which the mock value is being created for
+
+    Returns
+    ----------
+    int, float : 
+        the generated mock value
     """
     if "MPPT" in node_name:
         match signal_name:
