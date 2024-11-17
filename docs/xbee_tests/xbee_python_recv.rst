@@ -1,7 +1,7 @@
-xbee_python_rcv module
+xbee_python_recv module
 ======================
 
-.. automodule:: src.xbee_tests.xbee_python_rcv
+.. automodule:: src.xbee_tests.xbee_python_recv
    :members:
    :undoc-members:
    :show-inheritance:

@@ -116,10 +116,36 @@ class Row:
         return self.name in found.senders
 
     def stamp(self):
-        self.timestamp = datetime.now().timestamp()
+        """
+        Sets the timestamp of the row object to when it was stamped.
 
+        Parameters
+        ----------
+        None
+
+        Returns
+        ----------
+        None
+        """
+        self.timestamp = datetime.now().timestamp()
+        
     @staticmethod
     def signal_names(node_name: str, db: Database) -> list[str]:
+        """
+        Generates a list of signal names associated with a given node, based on a dataabase of CAN values.
+
+        Parameters
+        ----------
+        node_name : str
+            the name of the node
+        db : Database
+            a database of CAN values
+
+        Returns
+        ----------
+        list[str] : 
+            a list of signal names associated with the provided node name
+        """
         return [s.name for m in db.messages if node_name in m.senders for s in m.signals]
 
 
