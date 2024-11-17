@@ -10,6 +10,17 @@ from src.can.stats import mock_value
 def device_worker(bus: can.ThreadSafeBus, my_messages: list[cantools.database.Message]) -> None:
     """
     Constantly sends messages on the `bus`.
+
+    Parameters
+    ----------
+    bus : can.ThreadSafeBus
+        object that ensures messages are sent in a thread-safe manner
+    my_message : list[cantools.database.Message]
+        list of messages being sent
+    
+    Returns
+    ----------
+    None
     """
     while True:
         for msg in my_messages:
@@ -29,6 +40,17 @@ def start_virtual_can_bus(bus: can.ThreadSafeBus, db: Database) -> list[Thread]:
 
     This function starts all these threads and returns a handle to them so that
     they can be joined if needed.
+
+    Parameters
+    ----------
+    bus : can.ThreadSafeBus
+        object that ensures messages are sent in a thread-safe manner
+    db : Database
+        database of nodes
+
+    Returns
+    ----------
+    None
     """
     dev_threads: list[Thread] = []
     for i, _ in enumerate(db.nodes):
