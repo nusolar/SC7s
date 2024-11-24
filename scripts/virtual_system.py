@@ -4,6 +4,14 @@ from threading import Thread, Lock
 from queue import Queue # threadsafe mpmc queue used to emulate data transfer over XBee
 from copy import deepcopy
 
+# here is the rationale behind this file:
+# the functions each represent an active thread - threads are necessary because data comes randomly and asynchronously
+# main thread starts program, initalizes database, launches gui, and coordinates worker threads
+# accumulator thread monitors CAN messages on the virtual bus, parse incoming messages, and update row with decoded obj
+# sender thread serializes rows of data from the CAN bus and places them into a thread-safe
+# receiver thread reads serialized rows from the queue and updates the remote database
+# gps thread (gps is not on can bus) does thee same thing as accumulator thread but for can messages
+
 import can
 import cantools.database
 from cantools.database.can.database import Database

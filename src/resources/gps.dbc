@@ -1,0 +1,21 @@
+VERSION ""
+
+NS_ :
+    NS_DESC_
+    CM_
+    BA_DEF_
+    BA_
+    VAL_
+
+BS_:
+
+BU_: gps_node
+
+BO_ 100 GPS_Position: 8 gps_node
+ SG_ latitude : 0|32@1+ (0.000001,0) [0|90] "deg" gps_node
+ SG_ longitude : 32|32@1+ (0.000001,0) [-180|180] "deg" gps_node
+
+BO_ 101 GPS_Supplemental: 8 gps_node
+ SG_ altitude : 0|16@1+ (0.1,0) [0|10000] "m" gps_node
+ SG_ fix_quality : 16|8@1+ (1,0) [0|10] "quality" gps_node
+ SG_ satellites : 24|8@1+ (1,0) [0|255] "count" gps_node
