@@ -1,24 +1,20 @@
-from typing import cast, Generator
+from typing import AsyncGenerator, Optional, cast, Generator
 from time import sleep
 from threading import Thread, Lock
 from copy import deepcopy
 from dataclasses import dataclass
 import argparse
 from pathlib import Path
-from queue import Queue
-
-import can
-import cantools.database
-from cantools.database.can.database import Database
-from cantools.typechecking import SignalDictType
-from digi.xbee.devices import XBeeDevice
-import serial
-import json
 
 from sqlalchemy import URL, create_engine
 from sqlalchemy.orm import Session
 import serial
 import json
+
+
+# GPS-specific imports
+import pynmea2
+import asyncio
 
 from src import ROOT_DIR
 from src.can.row import Row
@@ -26,11 +22,12 @@ from src.util import add_dbc_file, find
 import src.gui
 import src.sql
 
-# GPS-specific imports
-import gps
-import pynmea2
-import asyncio
 
+import can
+import cantools.database
+from cantools.database.can.database import Database
+from cantools.typechecking import SignalDictType
+from digi.xbee.devices import XBeeDevice
 
 XBEE_PORT = "/dev/ttyUSB0"
 XBEE_BAUD_RATE = 57600
@@ -286,12 +283,6 @@ if __name__ == "__main__":
 
     # Start XBee communication if necessary
     start_xbee()
-
-    # Create a thread for sending data
-    sender = Thread(target=sender_worker, daemon=True)
-
-    # Start the threads
-    sender.start()
 
     # Display
     if args.display:
