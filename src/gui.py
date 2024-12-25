@@ -234,3 +234,10 @@ class HomeFrame(tk.Frame):
 
 def register_updater(callback):
     ...
+
+def main():
+    app = CarDisplay()
+    app.mainloop()
+
+if __name__ == "__main__":
+    main()

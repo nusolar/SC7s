@@ -12,12 +12,16 @@ from cantools.database.can.database import Database
 from cantools.typechecking import SignalDictType
 from digi.xbee.devices import XBeeDevice
 
+import sys
+import os
+
+# Add the parent directory of `scripts` and `src` to the Python path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from src import ROOT_DIR
 from src.can.row import Row
 from src.can.virtual import start_virtual_can_bus
-from src.util import add_dbc_file, find, unwrap
-
-import src.gui
+from src.util import add_dbc_file
 
 VIRTUAL_BUS_NAME = "virtbus"
 

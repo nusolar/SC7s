@@ -16,6 +16,12 @@ import json
 import pynmea2
 import asyncio
 
+import sys
+import os
+
+# Add the parent directory of `scripts` and `src` to the Python path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from src import ROOT_DIR
 from src.can.row import Row
 from src.util import add_dbc_file, find
