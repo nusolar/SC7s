@@ -1,4 +1,5 @@
 from typing import Literal
+from PIL import Image, ImageTk
 import tkinter as tk
 from tkinter import ttk
 from tkinter import font
@@ -49,6 +50,21 @@ class CarDisplay(tk.Tk):
 
         self.is_full = tk.StringVar()
         self.is_full.set("Exit Fullscreen")
+
+
+        image = Image.open("src/logo.png")  # Update with the path to your image
+
+        # Convert the image to a Tkinter-compatible format
+        photo = ImageTk.PhotoImage(image)
+
+        # Create a Label widget to display the image
+        label = tk.Label(self, image=photo)
+        label.pack(pady=10)
+
+        # Keep a reference to the image (important to prevent garbage collection)
+        label.image = photo
+
+
         fullscreen_btn = tk.Button(self, textvariable=self.is_full,
             command=self.toggleFullscreen, 
             font=("Inter", 12),
@@ -91,7 +107,7 @@ class HomeFrame(tk.Frame):
         # Updated meter with needle parameters
         self.meter1 = Meter(
             self.mainframe, 
-            radius=600, 
+            radius=450, 
             start=0, 
             end=80, 
             border_width=0, 
@@ -107,7 +123,7 @@ class HomeFrame(tk.Frame):
             #needle_type="triangle",  # Can be "triangle" or "line"
             #display_text=False  # Hide the digital display on meter
         )
-        self.meter1.grid(row=1, column=1, sticky=tk.N, padx=(0,300))
+        self.meter1.grid(row=1, column=1, sticky=tk.N, padx=(0,650), pady=(0,300))
 
         # Rest of your original code for info display
         info_items = [
