@@ -5,9 +5,6 @@ from copy import deepcopy
 from dataclasses import dataclass
 import argparse
 from pathlib import Path
-from datetime import datetime
-from queue import Queue
-import pynmea2
 
 import can
 import cantools.database
@@ -19,7 +16,8 @@ import json
 
 from sqlalchemy import URL, create_engine
 from sqlalchemy.orm import Session
-
+import serial
+import json
 
 from src import ROOT_DIR
 from src.can.row import Row
@@ -27,8 +25,6 @@ from src.util import add_dbc_file, find
 import src.gui
 import src.sql
 
-GPS_PORT = "/dev/ttyAMA0"
-#Maybe 0
 XBEE_PORT = "/dev/ttyUSB0"
 XBEE_BAUD_RATE = 57600
 REMOTE_NODE_ID = "Router"
@@ -89,55 +85,7 @@ class PicanInterface:
 class TextFileInterface:
     file: Path
 
-@dataclass
-class GPSData:
-    timestamp: datetime
-    latitude: float
-    longitude: float
-    speed: float
-    course: float
-
-    def serialize(self) -> dict:
-        return {
-            'timestamp': self.timestamp.isoformat(),
-            'lat': self.latitude,
-            'lon': self.longitude,
-            'speed': self.speed,
-            'course': self.course,
-        }
-
-class GPSReader:
-    def __init__(self,port = GPS_PORT, baud_rate=9600):
-        self.port = port
-        self.baud_rate = baud_rate
-        self.serial = None
-    def connect(self):
-        try:
-            self.serial = serial.Serial(
-                    port = self.port,
-                    baudrate = self.baud_rate,
-                    timeout=1,
-            )
-            return True
-        except serial.SerialException as e:
-            print(e)
-            return False
-
-    def read_gps(self):
-        if not self.serial or not self.serial.is_open:
-            if not self.connect():
-                return None
-        try:
-            line = self.serial.readline().decode('ascii', errors='ignore').strip()
-            if line.startswith('$'):
-                return pynmea2.parse(line)
-        except Exception as e:
-            print(f"GPS Error: {e}")
-            return None
-
-            
-
-Interface = CanusbInterface | PicanInterface | TextFileInterface
+Inteface = CanusbInterface | PicanInterface | TextFileInterface
 
 # made this it's own function because how you store the mock data could change
 def parse_text_file_line(line):
@@ -148,7 +96,7 @@ def parse_text_file_line(line):
 
     return tag, data
 
-def get_packets(interface: Interface) -> Generator[can.Message, None, None]:
+def get_packets(interface: Inteface) -> Generator[can.Message, None, None]:
     """Generates CAN Packets."""
     match interface:
         case CanusbInterface(port, baud_rate):
@@ -178,37 +126,7 @@ def get_packets(interface: Interface) -> Generator[can.Message, None, None]:
                     sleep(.1)
                     yield can.Message(arbitration_id=tag, data=data)
 
-def gps_worker(GPSqueue : Queue):
-    reader = GPSReader()
-    
-    if not reader.connect():
-        print("connection Failed")
-        return
-    currData = None
-
-    while True:
-        msg = reader.read_gps()
-        if msg:
-            try:
-               if msg.sentence_type == 'RMC':
-                        current_data = GPSData(
-                            timestamp=datetime.now(),
-                            latitidude=msg.latitude,
-                            longitude=msg.longitude,
-                            speed=msg.spd_over_grnd * 1.852,  # knots to km/h
-                            course=msg.true_course or 0.0,
-                        )
-                
-               elif msg.sentence_type == 'GGA' and current_data:
-                        current_data.satellites = msg.num_satellites
-                        current_data.fix_quality = msg.gps_qual
-                        gps_queue.put(current_data)
-                        current_data = None             
-            except Exception as e:
-                print(f"{e}")
-
-    
-def row_accumulator_worker(interface: Interface):
+def row_accumulator_worker(interface: Inteface):
     """
     Observes messages sent on the `bus` and accumulates them in a global row.
     """
@@ -265,8 +183,6 @@ if __name__ == "__main__":
     accumulator = Thread(target=row_accumulator_worker,
                          args=(PicanInterface(),),
                          daemon=True)
-    gps_queue = Queue()
-    gps_thread = Thread(target=gps_queue, args=(gps_queue,), daemon=True)
 
     # Create a thread to serialize rows as would be necessary with XBees
     sender = Thread(target=sender_worker, daemon=True)
@@ -274,7 +190,6 @@ if __name__ == "__main__":
     # Start the threads
     accumulator.start()
     sender.start()
-    gps_thread.start()
 
     # Display
     if args.display:
