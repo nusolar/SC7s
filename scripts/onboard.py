@@ -135,7 +135,7 @@ def row_accumulator_worker(interface: Inteface):
 
         row = find(rows, lambda r: r.owns(msg, db))
         if row is not None:
-            decoded = cast(SignalDictType, db.decode_message(msg.arbitration_id, msg.data))
+            decoded = cast(SignalDictType, db.decode_message(msg.arbitration_id, bytes(msg.data)))
             with row_lock:
                 for k, v in decoded.items():
                     row.signals[k].update(v)
